@@ -26,6 +26,8 @@
       --orb-2: #b1040e;   /* Stanford Bright Cardinal */
       --orb-3: #8c1515;   /* Stanford Cardinal */
       --orb-opacity: 0.6;
+      --name-solid: #8c1515;
+      --name-gradient: linear-gradient(135deg, #8c1515 0%, #b1040e 60%, #c43a00 100%);
     }
 
     @media (prefers-color-scheme: dark) {
@@ -44,6 +46,8 @@
         --orb-2: #b1040e;
         --orb-3: #8c1515;
         --orb-opacity: 0.5;
+        --name-solid: #fedd5c;
+        --name-gradient: linear-gradient(135deg, #fedd5c 0%, #ffab5c 50%, #ff6b5c 100%);
       }
     }
 
@@ -130,15 +134,39 @@
       to   { opacity: 1; transform: none; }
     }
 
+    .heading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .name {
+      margin: 0;
+      padding: 0 0.04em 0.06em;     /* room so the gradient doesn't clip glyph edges */
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue",
+                   Helvetica, Arial, system-ui, sans-serif;
+      font-size: clamp(64px, 16vw, 120px);
+      line-height: 1;
+      font-weight: 700;
+      letter-spacing: -0.045em;
+      color: var(--name-solid);
+      background: var(--name-gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
     .status {
       display: inline-flex;
       align-items: center;
       gap: 10px;
       margin: 0;
-      font-size: clamp(28px, 6vw, 44px);
-      line-height: 1.1;
-      font-weight: 600;
-      letter-spacing: -0.022em;
+      font-size: clamp(17px, 3.6vw, 21px);
+      line-height: 1.3;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      color: var(--secondary-label);
     }
 
     .pulse {
@@ -181,7 +209,7 @@
     .button svg { width: 18px; height: 18px; flex: none; }
 
     @media (max-width: 420px) {
-      .glass { padding: 36px 28px; gap: 24px; border-radius: 28px; }
+      .glass { padding: 40px 32px; gap: 28px; border-radius: 28px; }
     }
 
     /* ---------- Accessibility preferences ---------- */
@@ -205,6 +233,12 @@
         background: var(--bg);
         border-color: var(--label);
       }
+      .name {
+        background: none;
+        -webkit-text-fill-color: currentColor;
+        color: var(--label);
+      }
+      .status { color: var(--label); }
       .aurora, .grain { display: none; }
     }
   </style>
@@ -219,7 +253,10 @@
 
   <main>
     <section class="glass">
-      <h1 class="status"><span class="pulse" aria-hidden="true"></span>Under construction</h1>
+      <header class="heading">
+        <h1 class="name">Eimon</h1>
+        <p class="status"><span class="pulse" aria-hidden="true"></span>Under construction</p>
+      </header>
       <!-- Update this URL if your LinkedIn handle is different -->
       <a class="button" href="https://www.linkedin.com/in/eimonamjadi" target="_blank" rel="noopener noreferrer">
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
