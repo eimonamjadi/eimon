@@ -75,6 +75,12 @@
       pointer-events: none;
       filter: blur(80px) saturate(1.2);
     }
+    /* Each orb sits in a layer that follows the pointer at its own depth */
+    .layer {
+      position: absolute;
+      inset: 0;
+      will-change: transform;
+    }
     .orb {
       position: absolute;
       width: 60vmax;
@@ -245,9 +251,9 @@
 </head>
 <body>
   <div class="aurora" aria-hidden="true">
-    <div class="orb a"></div>
-    <div class="orb b"></div>
-    <div class="orb c"></div>
+    <div class="layer" data-depth="1"><div class="orb a"></div></div>
+    <div class="layer" data-depth="-0.7"><div class="orb b"></div></div>
+    <div class="layer" data-depth="1.4"><div class="orb c"></div></div>
   </div>
   <div class="grain" aria-hidden="true"></div>
 
@@ -266,5 +272,46 @@
       </a>
     </section>
   </main>
+  <script>
+    // Pointer parallax: the aurora layers ease toward the cursor at different depths.
+    (function () {
+      var motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+      var layers = Array.prototype.slice.call(document.querySelectorAll('.aurora .layer'));
+      var RANGE = 6;          // max shift in vmax at depth 1
+      var EASE = 0.06;        // lower = smoother, slower follow
+      var target = { x: 0, y: 0 }, current = { x: 0, y: 0 }, raf = null;
+
+      function onMove(e) {
+        target.x = (e.clientX / window.innerWidth) * 2 - 1;
+        target.y = (e.clientY / window.innerHeight) * 2 - 1;
+        if (!raf) raf = requestAnimationFrame(tick);
+      }
+      function onLeave() {
+        target.x = 0; target.y = 0;
+        if (!raf) raf = requestAnimationFrame(tick);
+      }
+      function tick() {
+        current.x += (target.x - current.x) * EASE;
+        current.y += (target.y - current.y) * EASE;
+        layers.forEach(function (el) {
+          var d = parseFloat(el.dataset.depth) * RANGE;
+          el.style.transform = 'translate3d(' + (current.x * d) + 'vmax,' + (current.y * d) + 'vmax,0)';
+        });
+        var settled = Math.abs(target.x - current.x) < 0.001 && Math.abs(target.y - current.y) < 0.001;
+        raf = settled ? null : requestAnimationFrame(tick);
+      }
+      function enable() {
+        window.addEventListener('pointermove', onMove, { passive: true });
+        document.documentElement.addEventListener('pointerleave', onLeave);
+      }
+      function disable() {
+        window.removeEventListener('pointermove', onMove);
+        document.documentElement.removeEventListener('pointerleave', onLeave);
+        layers.forEach(function (el) { el.style.transform = ''; });
+      }
+      if (!motion.matches) enable();
+      motion.addEventListener && motion.addEventListener('change', function (m) { m.matches ? disable() : enable(); });
+    })();
+  </script>
 </body>
 </html>
