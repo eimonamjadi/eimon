@@ -1,0 +1,2497 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calculus of a Linear Neuron</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="An interactive primer on the calculus behind training a linear neural network: loss, derivatives, the chain rule, gradients and gradient descent.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23fedd5c'/%3E%3Cstop offset='1' stop-color='%238c1515'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,600;1,400;1,600&display=swap">
+<style>
+:root {
+  /* Layout: a 680px reading column; live figures widen to 1040px. A sticky bar mirrors the neuron's state everywhere. */
+  --bg: #f5f5f7;
+  --bar-bg: rgba(245, 245, 247, 0.86);
+  --surface: #ffffff;
+  --surface-2: #f1f1f4;
+  --seg-on: #ffffff;
+  --ink: #1d1d1f;
+  --ink-2: #48484e;
+  --ink-3: #6b6b72;
+  --line: #e4e4e9;
+  --line-2: #c8c8ce;
+  --accent: #8c1515;
+  --btn: #8c1515;
+  --btn-hover: #b1040e;
+  --on-accent: #ffffff;
+  --focus: #8c1515;
+  --highlight: #fedd5c;
+  --highlight-soft: rgba(254, 221, 92, 0.55);
+  --idea-bg: #fff5c9;
+  --model: #a51c1c;
+  --model-ink: #a51c1c;
+  --model-tint: rgba(165, 28, 28, 0.09);
+  --err: #c96f00;
+  --err-ink: #975200;
+  --err-tint: rgba(201, 111, 0, 0.16);
+  --grad: #00809e;
+  --grad-ink: #006a83;
+  --grad-tint: rgba(0, 128, 158, 0.12);
+  --data: #1d1d1f;
+  --good: #1e7b3c;
+  --good-tint: rgba(30, 123, 60, 0.12);
+  --bad: #b3261e;
+  --bad-tint: rgba(179, 38, 30, 0.10);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 30px rgba(0, 0, 0, 0.05);
+  --title-gradient: linear-gradient(135deg, #8c1515 0%, #b1040e 60%, #c43a00 100%);
+  --title-solid: #8c1515;
+
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+  --font-math: "STIX Two Text", "Cambria Math", Cambria, "Times New Roman", serif;
+  --radius: 20px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #000000;
+    --bar-bg: rgba(0, 0, 0, 0.78);
+    --surface: #161618;
+    --surface-2: #232326;
+    --seg-on: #3a3a3f;
+    --ink: #f5f5f7;
+    --ink-2: #c4c4ca;
+    --ink-3: #9a9aa1;
+    --line: #2c2c30;
+    --line-2: #46464c;
+    --accent: #ff8a80;
+    --btn: #b1040e;
+    --btn-hover: #c8102e;
+    --focus: #fedd5c;
+    --highlight-soft: rgba(254, 221, 92, 0.30);
+    --idea-bg: #2a2410;
+    --model: #e04a6a;
+    --model-ink: #f27d94;
+    --model-tint: rgba(224, 74, 106, 0.16);
+    --err: #bb8500;
+    --err-ink: #e2af3c;
+    --err-tint: rgba(187, 133, 0, 0.24);
+    --grad: #1a9fb5;
+    --grad-ink: #5ccbdc;
+    --grad-tint: rgba(26, 159, 181, 0.18);
+    --data: #f5f5f7;
+    --good: #52c47b;
+    --good-tint: rgba(82, 196, 123, 0.16);
+    --bad: #ff7b72;
+    --bad-tint: rgba(255, 123, 114, 0.14);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px rgba(0, 0, 0, 0.35);
+    --title-gradient: linear-gradient(135deg, #fedd5c 0%, #ffab5c 50%, #ff6b5c 100%);
+    --title-solid: #fedd5c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #000000;
+  --bar-bg: rgba(0, 0, 0, 0.78);
+  --surface: #161618;
+  --surface-2: #232326;
+  --seg-on: #3a3a3f;
+  --ink: #f5f5f7;
+  --ink-2: #c4c4ca;
+  --ink-3: #9a9aa1;
+  --line: #2c2c30;
+  --line-2: #46464c;
+  --accent: #ff8a80;
+  --btn: #b1040e;
+  --btn-hover: #c8102e;
+  --focus: #fedd5c;
+  --highlight-soft: rgba(254, 221, 92, 0.30);
+  --idea-bg: #2a2410;
+  --model: #e04a6a;
+  --model-ink: #f27d94;
+  --model-tint: rgba(224, 74, 106, 0.16);
+  --err: #bb8500;
+  --err-ink: #e2af3c;
+  --err-tint: rgba(187, 133, 0, 0.24);
+  --grad: #1a9fb5;
+  --grad-ink: #5ccbdc;
+  --grad-tint: rgba(26, 159, 181, 0.18);
+  --data: #f5f5f7;
+  --good: #52c47b;
+  --good-tint: rgba(82, 196, 123, 0.16);
+  --bad: #ff7b72;
+  --bad-tint: rgba(255, 123, 114, 0.14);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px rgba(0, 0, 0, 0.35);
+  --title-gradient: linear-gradient(135deg, #fedd5c 0%, #ffab5c 50%, #ff6b5c 100%);
+  --title-solid: #fedd5c;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 76px; -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 17px/1.6 var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px);
+  z-index: 10;
+  background: var(--bar-bg);
+}
+a { color: var(--accent); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+b, strong { font-weight: 600; }
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* ---------- math ---------- */
+var { font-family: var(--font-math); font-style: italic; font-size: 1.12em; line-height: 1; text-transform: none; letter-spacing: 0; }
+.arr { font-family: var(--font-ui); font-style: normal; font-size: 0.85em; padding: 0 0.15em; }
+.m { font-family: var(--font-math); font-size: 1.1em; white-space: nowrap; }
+.m var { font-size: 1em; }
+sub, sup { font-size: 0.7em; line-height: 0; }
+.eq {
+  font-family: var(--font-math);
+  font-size: 23px;
+  line-height: 1.5;
+  text-align: center;
+  white-space: nowrap;
+  overflow-x: auto;
+  padding: 6px 2px;
+}
+.eq var { font-size: 1em; }
+.eq .gap { display: inline-block; width: 1.2em; }
+.frac {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: middle;
+  line-height: 1.12;
+  font-size: 0.86em;
+  margin: 0 0.12em;
+}
+.frac > span { padding: 0 0.2em; }
+.frac > span:first-child { border-bottom: 1px solid currentColor; padding-bottom: 0.08em; }
+.frac > span:last-child { padding-top: 0.1em; }
+.c-model { color: var(--model-ink); }
+.c-err { color: var(--err-ink); }
+.c-grad { color: var(--grad-ink); }
+.hl { background: linear-gradient(transparent 58%, var(--highlight-soft) 58%); padding: 0 2px; }
+
+/* ---------- top bar ---------- */
+.bar {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 9;
+  background: var(--bar-bg);
+  -webkit-backdrop-filter: saturate(1.6) blur(18px);
+  backdrop-filter: saturate(1.6) blur(18px);
+  border-bottom: 1px solid var(--line);
+}
+.bar-inner {
+  max-width: 1072px;
+  margin: 0 auto;
+  min-height: 54px;
+  padding-block: 8px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex;
+  align-items: center;
+  gap: 10px 18px;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.brand-mark { flex: none; width: 18px; height: 18px; border-radius: 5px; background: var(--title-gradient); }
+.bar-section {
+  flex: 1;
+  min-width: 0;
+  color: var(--ink-3);
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bar-model {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.bar-eq { font-size: 17px; }
+.bar-loss { font-size: 14px; color: var(--ink-2); }
+.bar-loss b { color: var(--ink); }
+@media (max-width: 680px) {
+  .brand-name, .bar-section { display: none; }
+  .bar-model { flex: 1; justify-content: space-between; margin-left: 0; gap: 8px; }
+  .bar-eq { font-size: 15.5px; }
+}
+@media (max-width: 380px) { .bar-model .pill { display: none; } }
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.pill.good { background: var(--good-tint); color: var(--good); }
+.pill.warn { background: var(--err-tint); color: var(--err-ink); }
+.pill.bad { background: var(--bad-tint); color: var(--bad); }
+.pill.run { background: var(--grad-tint); color: var(--grad-ink); }
+
+/* ---------- page ---------- */
+.page {
+  max-width: 1072px;
+  margin: 0 auto;
+  padding-block: 24px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+  gap: 88px;
+}
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 44px;
+  align-items: center;
+  padding-top: 28px;
+}
+@media (max-width: 880px) { .hero { grid-template-columns: minmax(0, 1fr); gap: 28px; padding-top: 8px; } }
+.eyebrow {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+h1 {
+  margin: 10px 0 20px;
+  font: 700 clamp(42px, 6.6vw, 72px)/1.02 var(--font-display);
+  letter-spacing: -0.038em;
+  text-wrap: balance;
+}
+.grad-text {
+  color: var(--title-solid);
+  background: var(--title-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  padding-bottom: 0.06em;
+}
+.lead { margin: 0 0 26px; font-size: 19.5px; line-height: 1.55; color: var(--ink-2); max-width: 34em; text-wrap: pretty; }
+.hero-cta { display: flex; flex-wrap: wrap; gap: 10px; }
+.hero-fig { gap: 10px; }
+.hero-fig figcaption { font-size: 14px; color: var(--ink-3); line-height: 1.5; }
+
+.toc ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px 16px;
+}
+@media (max-width: 880px) { .toc ol { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.toc a {
+  display: grid;
+  gap: 2px;
+  padding-top: 10px;
+  border-top: 2px solid var(--line-2);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 15.5px;
+  font-weight: 500;
+  line-height: 1.3;
+  transition: border-color 0.2s;
+}
+.toc a:hover { border-top-color: var(--accent); }
+.toc a.current { border-top-color: var(--accent); }
+.toc-n { font-size: 12.5px; font-weight: 600; color: var(--ink-3); font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
+.toc-head { margin: 0 0 14px; font-size: 13px; color: var(--ink-3); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+
+.part { display: grid; gap: 30px; scroll-margin-top: 76px; }
+.prose { width: 100%; max-width: 680px; margin-inline: auto; display: grid; gap: 18px; min-width: 0; }
+.prose p { margin: 0; text-wrap: pretty; }
+.prose ul { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+hgroup { display: grid; gap: 8px; margin: 0; }
+h2 {
+  margin: 0;
+  font: 700 clamp(30px, 4.4vw, 42px)/1.08 var(--font-display);
+  letter-spacing: -0.028em;
+  text-wrap: balance;
+}
+h3 { text-wrap: balance; }
+.idea {
+  display: grid;
+  gap: 4px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: var(--idea-bg);
+}
+.idea-label { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
+.cards3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 640px) { .cards3 { grid-template-columns: minmax(0, 1fr); } }
+.sign-card { padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); display: grid; gap: 4px; align-content: start; font-size: 15px; }
+.sign-card .m { font-size: 18px; }
+.sign-card p { color: var(--ink-2); }
+
+/* ---------- figures ---------- */
+.fig {
+  margin: 0;
+  min-width: 0;
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+@media (max-width: 540px) { .fig { padding: 14px; border-radius: 16px; gap: 14px; } }
+.fig-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 20px; }
+.fig-title { margin: 0; font-size: 16.5px; font-weight: 600; letter-spacing: -0.01em; }
+.fig-hint { margin: 0; font-size: 14px; color: var(--ink-3); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0; padding: 0; list-style: none; font-size: 13px; color: var(--ink-2); }
+.legend li { display: block; }
+.sw { display: inline-block; width: 18px; height: 3px; margin-right: 7px; border-radius: 2px; background: var(--c); vertical-align: middle; position: relative; top: -1px; }
+.sw.dot { width: 9px; height: 9px; border-radius: 50%; }
+.sw.dash { background: repeating-linear-gradient(90deg, var(--c) 0 5px, transparent 5px 9px); height: 2px; }
+.sw.sq { width: 11px; height: 11px; border-radius: 2px; background: var(--err-tint); border: 1.5px solid var(--err); }
+.split { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.split.even { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+@media (max-width: 820px) { .split, .split.even { grid-template-columns: minmax(0, 1fr); } }
+.stack { display: grid; gap: 14px; min-width: 0; align-content: start; }
+.mini-title { margin: 0 0 2px; font-size: 12.5px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-3); }
+.say { margin: 0; font-size: 15.5px; color: var(--ink-2); line-height: 1.55; }
+.say b { color: var(--ink); }
+
+/* plots */
+.plot-host { position: relative; width: 100%; min-width: 0; }
+.plot { position: relative; display: block; user-select: none; -webkit-user-select: none; font-family: var(--font-ui); }
+.plot-canvas { position: absolute; pointer-events: none; }
+.plot .grid line { stroke: var(--line); stroke-width: 1; }
+.plot .grid line.zero { stroke: var(--line-2); }
+.plot .axis-line { stroke: var(--line-2); stroke-width: 1; }
+.plot .tick { fill: var(--ink-3); font-size: 11px; font-variant-numeric: tabular-nums; }
+.plot .ax-title {
+  fill: var(--ink-2);
+  font: italic 15px var(--font-math);
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+.plot .ax-title .plain { font: 500 12px var(--font-ui); font-style: normal; }
+.scrub { touch-action: pan-y; cursor: crosshair; }
+.map { cursor: crosshair; touch-action: pan-y; }
+.model-line { stroke: var(--model); stroke-width: 2.5; stroke-linecap: round; }
+.best-line { stroke: var(--ink-3); stroke-width: 1.5; stroke-dasharray: 5 5; }
+.res-line { stroke: var(--err); stroke-width: 2; }
+.res-sq { fill: var(--err-tint); stroke: var(--err); stroke-width: 1.5; }
+.pt-dot { fill: var(--data); stroke: var(--surface); stroke-width: 2; }
+.pt-halo { fill: var(--highlight); opacity: 0; transition: opacity 0.15s; }
+.pt.hl .pt-halo { opacity: 0.95; }
+.hit { fill: transparent; }
+.draggable { cursor: grab; }
+.draggable.dragging { cursor: grabbing; }
+.handle-dot { fill: var(--surface); stroke: var(--model); stroke-width: 2.5; }
+.handle-dot.filled { fill: var(--model); stroke: var(--surface); stroke-width: 2.5; }
+.handle-label {
+  fill: var(--ink);
+  font: italic 600 15px var(--font-math);
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+.focus-ring { fill: none; stroke: var(--focus); stroke-width: 2; opacity: 0; }
+.handle:focus, .pt:focus { outline: none; }
+.handle:focus-visible .focus-ring, .pt:focus-visible .focus-ring { opacity: 1; }
+.tri { fill: none; stroke: var(--ink-3); stroke-width: 1.25; }
+.tri-label { fill: var(--ink-2); font: italic 14px var(--font-math); }
+.curve-err { fill: none; stroke: var(--err); stroke-width: 2.5; stroke-linejoin: round; }
+.curve-ink { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; }
+.curve-grad { fill: none; stroke: var(--grad); stroke-width: 2.5; stroke-linejoin: round; }
+.secant { stroke: var(--ink-3); stroke-width: 1.5; stroke-dasharray: 6 5; }
+.tangent { stroke: var(--grad); stroke-width: 2.5; stroke-linecap: round; }
+.q-dot { fill: var(--ink-2); stroke: var(--surface); stroke-width: 2; }
+.grad-dot { fill: var(--grad); stroke: var(--surface); stroke-width: 2; }
+.err-dot { fill: var(--err); stroke: var(--surface); stroke-width: 2; }
+.contour { fill: none; stroke: var(--ink); stroke-opacity: 0.17; stroke-width: 1; }
+.guide { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 3 4; }
+.guide-label, .opt-label, .arrow-label, .end-label {
+  fill: var(--ink-2);
+  font-size: 11.5px;
+  font-weight: 500;
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 3.5px;
+  stroke-linejoin: round;
+}
+.arrow-label { font: italic 600 14px var(--font-math); }
+.opt-mark { stroke: var(--ink); stroke-width: 2; fill: none; stroke-linecap: round; }
+.grad-arrow { stroke: var(--grad); fill: var(--grad); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.gd-path { fill: none; stroke: var(--model); stroke-width: 1.5; stroke-opacity: 0.75; stroke-linejoin: round; }
+.gd-dot { fill: var(--model); }
+.area-err { fill: var(--err-tint); }
+.crosshair { stroke: var(--line-2); stroke-width: 1; }
+.tip {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line-2);
+  box-shadow: var(--shadow);
+  font-size: 12.5px;
+  line-height: 1.45;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.plot-badge {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  padding: 2px 9px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-size: 12.5px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+/* controls */
+.ctrls { display: grid; gap: 4px; min-width: 0; }
+.ctrl { display: grid; grid-template-columns: 6.6em minmax(0, 1fr) 3.4em; align-items: center; gap: 12px; }
+.ctrl label { font-size: 14px; color: var(--ink-2); white-space: nowrap; }
+.ctrl label var { color: var(--ink); }
+.ctrl output { text-align: right; font-size: 14.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 30px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: var(--line-2); }
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -8px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2.5px solid var(--thumb, var(--model));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+}
+input[type="range"]::-moz-range-track { height: 4px; border-radius: 2px; background: var(--line-2); }
+input[type="range"]::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2.5px solid var(--thumb, var(--model));
+}
+input[type="range"]:focus-visible { outline-offset: 0; border-radius: 6px; }
+.btn {
+  appearance: none;
+  display: inline-block;
+  text-align: center;
+  line-height: 22px;
+  min-height: 40px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, transform 0.15s;
+}
+.btn:hover { background: var(--surface-2); }
+.btn:active { transform: scale(0.97); }
+.btn.primary { background: var(--btn); border-color: var(--btn); color: var(--on-accent); }
+.btn.primary:hover { background: var(--btn-hover); border-color: var(--btn-hover); }
+.btn[disabled] { opacity: 0.45; cursor: default; transform: none; }
+.btn.small { min-height: 34px; padding: 5px 14px; font-size: 14px; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 999px; background: var(--surface-2); }
+.seg button {
+  appearance: none;
+  border: 0;
+  min-height: 32px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  font: 500 14px var(--font-ui);
+  cursor: pointer;
+}
+.seg button[aria-pressed="true"] { background: var(--seg-on); color: var(--ink); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14); }
+.seg button var { font-size: 1.05em; }
+.check { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-2); cursor: pointer; }
+.check input { width: 17px; height: 17px; accent-color: var(--btn); margin: 0; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  appearance: none;
+  min-height: 32px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line-2);
+  background: transparent;
+  color: var(--ink-2);
+  font: 500 13.5px var(--font-ui);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.chip:hover { border-color: var(--ink-3); color: var(--ink); }
+
+/* readouts */
+.readouts { display: grid; font-variant-numeric: tabular-nums; }
+.ro { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.ro:last-child { border-bottom: 0; }
+.ro-k { color: var(--ink-2); }
+.ro-v { font-weight: 600; white-space: nowrap; }
+.ro-v.grad { color: var(--grad-ink); }
+.ro-v.err { color: var(--err-ink); }
+.big-ro { font-family: var(--font-math); font-size: 22px; text-align: center; white-space: nowrap; overflow-x: auto; }
+.big-ro b { font-family: var(--font-ui); font-size: 18px; color: var(--grad-ink); font-variant-numeric: tabular-nums; }
+
+/* table */
+.tbl-wrap { overflow-x: auto; min-width: 0; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.tbl th { padding: 6px 8px; text-align: right; font-weight: 500; color: var(--ink-3); border-bottom: 1px solid var(--line-2); white-space: nowrap; }
+.tbl td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.tbl th:first-child, .tbl td:first-child { text-align: left; color: var(--ink-3); }
+.tbl tbody tr { cursor: default; }
+.tbl tr.hl td { background: var(--highlight-soft); }
+.tbl tfoot td { border-bottom: 0; font-weight: 600; padding-top: 10px; }
+.tbl tfoot td:first-child { color: var(--ink-2); font-weight: 500; }
+.minibar { display: inline-block; width: 44px; height: 6px; margin-right: 8px; border-radius: 3px; background: var(--surface-2); vertical-align: middle; overflow: hidden; }
+.minibar i { display: block; height: 100%; border-radius: 3px; background: var(--err); }
+
+/* computation graph */
+.graph-host { position: relative; min-width: 0; }
+.graph { display: block; user-select: none; -webkit-user-select: none; font-family: var(--font-ui); }
+.graph .pill-bg { fill: var(--surface-2); stroke: var(--line-2); stroke-width: 1; }
+.graph .pill-bg.param { stroke: var(--model); stroke-width: 1.75; }
+.graph .pill-bg.active, .graph .op.active { stroke: var(--grad); stroke-width: 2.5; fill: var(--grad-tint); }
+.graph .node-text { fill: var(--ink); font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.graph .v { font: italic 16px var(--font-math); }
+.graph .op { fill: var(--surface); stroke: var(--ink-3); stroke-width: 1.5; }
+.graph .op-sym { fill: var(--ink); font: 18px var(--font-math); }
+.graph .edge { stroke: var(--line-2); stroke-width: 1.5; fill: none; }
+.graph .edge.done { stroke: var(--grad); stroke-opacity: 0.6; }
+.graph .edge.flow { stroke: var(--grad); stroke-opacity: 1; stroke-width: 2.5; stroke-dasharray: 7 6; animation: flow 0.7s linear infinite; }
+@keyframes flow { to { stroke-dashoffset: 13; } }
+.graph .fwd { fill: var(--ink-2); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.graph .chip-bg { fill: var(--grad-tint); }
+.graph .chip-text { fill: var(--grad-ink); font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.graph .chip-text .v { font-size: 14px; font-weight: 400; }
+.graph .edge-w { stroke: var(--ink-3); fill: none; stroke-linecap: round; }
+.arrow-fill { fill: var(--line-2); }
+.arrow-fill-g { fill: var(--grad); }
+.arrow-fill-ink { fill: var(--ink-3); }
+.step-panel {
+  min-height: 5.2em;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  font-size: 15.5px;
+  line-height: 1.6;
+}
+.step-count { display: block; margin-bottom: 2px; font-size: 12px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--grad-ink); }
+
+/* gradient descent */
+.range-wrap { position: relative; }
+.crit { position: absolute; top: 6px; bottom: 6px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--bad); pointer-events: none; }
+.crit span { position: absolute; top: calc(100% + 1px); left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 600; color: var(--bad); white-space: nowrap; }
+.gd-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px 24px; align-items: center; }
+@media (max-width: 720px) { .gd-controls { grid-template-columns: minmax(0, 1fr); } }
+.gd-controls .ctrl { grid-template-columns: 8.4em minmax(0, 1fr) 3.4em; }
+.gd-foot { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px 18px; align-items: start; }
+@media (max-width: 720px) { .gd-foot { grid-template-columns: minmax(0, 1fr); } }
+.gd-foot .pill { justify-self: start; }
+@media (max-width: 520px) {
+  .gd-controls .ctrl { grid-template-columns: 5em minmax(0, 1fr) 3.4em; }
+  .gd-controls .ctrl label { white-space: normal; line-height: 1.25; }
+}
+.upd { display: grid; gap: 2px; font-size: 16px; overflow-x: auto; }
+.upd .m { font-size: 17px; }
+.upd b { font-family: var(--font-ui); color: var(--ink); }
+.upd-k { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.heat-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 8px; font-size: 12px; color: var(--ink-3); }
+.heat-legend span { white-space: nowrap; }
+.heat-legend .ramp { min-width: 60px; }
+.heat-legend .ramp {
+  flex: 0 1 180px;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--err) 4%, var(--surface)), color-mix(in srgb, var(--err) 82%, var(--surface)));
+  border: 1px solid var(--line);
+}
+
+/* many inputs */
+.inputs-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 28px; }
+@media (max-width: 560px) { .inputs-grid { grid-template-columns: minmax(0, 1fr); } }
+.inputs-grid fieldset { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 2px; }
+.inputs-grid legend { padding: 0; margin-bottom: 4px; font-size: 12.5px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-3); }
+.inputs-grid .ctrl { grid-template-columns: 2.6em minmax(0, 1fr) 3.2em; }
+.gbars { display: grid; gap: 10px; }
+.gbar { display: grid; grid-template-columns: 4.6em minmax(0, 1fr) 4em; align-items: center; gap: 12px; font-size: 14px; }
+.gbar-k { white-space: nowrap; }
+.gbar-track { position: relative; height: 16px; border-radius: 4px; background: var(--surface-2); }
+.gbar-track::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--line-2); }
+.gbar-fill { position: absolute; top: 3px; bottom: 3px; border-radius: 3px; background: var(--grad); transition: left 0.2s, width 0.2s; }
+.gbar-v { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* neuron diagram */
+.neuron { display: block; width: 100%; max-width: 460px; height: auto; margin: 0 auto; }
+.neuron .n-io { fill: var(--surface); stroke: var(--line-2); stroke-width: 1.5; }
+.neuron .n-node { fill: var(--model-tint); stroke: var(--model); stroke-width: 2; }
+.neuron .n-edge { stroke: var(--ink-3); stroke-width: 1.5; }
+.neuron text { fill: var(--ink); font: italic 21px var(--font-math); text-anchor: middle; }
+.neuron .n-w { font-size: 17px; fill: var(--ink-2); }
+
+/* quiz */
+.quiz { display: grid; gap: 12px; padding: 18px 20px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); }
+.quiz-label { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.quiz-q { margin: 0; font-weight: 500; }
+.quiz-opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.quiz-opt.right { background: var(--good-tint); border-color: var(--good); }
+.quiz-opt.wrong { background: var(--bad-tint); border-color: var(--bad); }
+.quiz-fb { margin: 0; min-height: 1.6em; font-size: 15.5px; color: var(--ink-2); }
+.quiz-fb.right b { color: var(--good); }
+.quiz-fb.wrong b { color: var(--bad); }
+.quiz-fb.right b::before { content: "✓ "; }
+.quiz-fb.wrong b::before { content: "✗ "; }
+
+/* cheat sheet */
+.sheet { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 880px) { .sheet { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .sheet { grid-template-columns: minmax(0, 1fr); } }
+.sheet-card { display: grid; gap: 8px; align-content: start; padding: 16px 18px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); min-width: 0; }
+.sheet-card h3 { margin: 0; font-size: 12.5px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-3); }
+.sheet-card .eq { font-size: 20px; text-align: left; padding: 0; }
+.sheet-card p { margin: 0; font-size: 14.5px; color: var(--ink-2); }
+.foot { padding-top: 8px; border-top: 1px solid var(--line); }
+.foot .prose { gap: 8px; font-size: 14.5px; color: var(--ink-3); }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .graph .edge.flow { animation: none; }
+  .btn, .gbar-fill, .toc a, .pt-halo { transition: none; }
+}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="bar-inner">
+    <a class="brand" href="#top"><span class="brand-mark" aria-hidden="true"></span><span class="brand-name">Linear Neuron</span></a>
+    <span class="bar-section" id="bar-section">Introduction</span>
+    <div class="bar-model" title="Your neuron right now. Every figure on the page shares it.">
+      <span class="bar-eq m" id="bar-eq"></span>
+      <span class="bar-loss">Loss <b id="bar-loss">–</b></span>
+      <span class="pill" id="bar-pill">–</span>
+    </div>
+  </div>
+</header>
+
+<main class="page" id="top">
+  <section class="hero" data-title="Introduction">
+    <div>
+      <p class="eyebrow">Interactive primer</p>
+      <h1>Calculus of a <span class="grad-text">Linear Neuron</span></h1>
+      <p class="lead">A neural network learns by walking downhill on its own error. Three ideas from calculus explain that walk: the derivative, the chain rule and the gradient. This page builds each one on a single neuron, and every figure responds when you drag, slide or press.</p>
+      <div class="hero-cta">
+        <a class="btn primary" href="#model">Start with part 1</a>
+        <a class="btn" href="#cheatsheet">Jump to the cheat sheet</a>
+      </div>
+    </div>
+    <figure class="fig hero-fig">
+      <div id="hero-plot"></div>
+      <figcaption>Gradient descent fitting <span class="m"><var>ŷ</var> = <var>w</var><var>x</var> + <var>b</var></span> to six points. By part 7 you can compute every step of it yourself.</figcaption>
+    </figure>
+  </section>
+
+  <nav class="toc" aria-label="Parts of the primer">
+    <p class="toc-head">Eight parts, in order</p>
+    <ol>
+      <li><a href="#model"><span class="toc-n">1</span><span>A neuron is a line</span></a></li>
+      <li><a href="#loss"><span class="toc-n">2</span><span>Measuring the error</span></a></li>
+      <li><a href="#derivative"><span class="toc-n">3</span><span>The derivative</span></a></li>
+      <li><a href="#rules"><span class="toc-n">4</span><span>Derivative rules</span></a></li>
+      <li><a href="#chain"><span class="toc-n">5</span><span>The chain rule</span></a></li>
+      <li><a href="#gradient"><span class="toc-n">6</span><span>The gradient</span></a></li>
+      <li><a href="#descent"><span class="toc-n">7</span><span>Gradient descent</span></a></li>
+      <li><a href="#many"><span class="toc-n">8</span><span>Many inputs</span></a></li>
+    </ol>
+  </nav>
+
+  <!-- ===================== PART 1 ===================== -->
+  <section class="part" id="model" data-title="1 · A neuron is a line">
+    <div class="prose">
+      <hgroup><p class="eyebrow">Part 1</p><h2>A neuron is a line</h2></hgroup>
+      <p>A linear neuron takes a number <var>x</var>, multiplies it by a <b>weight</b> <var>w</var>, and adds a <b>bias</b> <var>b</var>. The result is its prediction, written <var>ŷ</var> and read “y-hat”.</p>
+      <svg class="neuron" viewBox="0 0 460 120" role="img" aria-label="Input x travels along an edge that multiplies by w, into a node that adds b, and out as y-hat">
+        <defs><marker id="n-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" class="arrow-fill-ink"/></marker></defs>
+        <circle cx="42" cy="62" r="26" class="n-io"/>
+        <text x="42" y="69">x</text>
+        <line x1="70" y1="62" x2="198" y2="62" class="n-edge" marker-end="url(#n-arrow)"/>
+        <text x="134" y="48" class="n-w">× w</text>
+        <circle cx="236" cy="62" r="34" class="n-node"/>
+        <text x="236" y="69">+ b</text>
+        <line x1="272" y1="62" x2="384" y2="62" class="n-edge" marker-end="url(#n-arrow)"/>
+        <circle cx="414" cy="62" r="26" class="n-io"/>
+        <text x="414" y="69">ŷ</text>
+      </svg>
+      <div class="eq"><var>ŷ</var> = <var class="c-model">w</var><var>x</var> + <var class="c-model">b</var></div>
+      <p>Plot <var>ŷ</var> against <var>x</var> and you get a straight line. The weight is the slope: each step of 1 in <var>x</var> changes <var>ŷ</var> by <var>w</var>. The bias is the height where the line crosses <span class="m"><var>x</var> = 0</span>. <span class="hl">Training means choosing <var>w</var> and <var>b</var> so the line runs close to the data.</span></p>
+    </div>
+
+    <figure class="fig">
+      <div class="fig-head">
+        <h3 class="fig-title">Fit the line by eye</h3>
+        <p class="fig-hint">Drag the two hollow handles, the sliders, or the points themselves.</p>
+      </div>
+      <ul class="legend" aria-label="Legend">
+        <li><span class="sw dot" style="--c: var(--data)"></span>data point (<var>x</var>, <var>y</var>)</li>
+        <li><span class="sw" style="--c: var(--model)"></span>neuron’s line</li>
+        <li><span class="sw" style="--c: var(--ink-3); height: 1.5px"></span>slope triangle: over 1, up <var>w</var></li>
+      </ul>
+      <div id="s1-plot"></div>
+      <div class="split even">
+        <div class="ctrls">
+          <div class="ctrl"><label for="s1-w"><var>w</var> weight</label><input type="range" id="s1-w" min="-1.5" max="4.5" step="0.01"><output id="s1-w-out" for="s1-w"></output></div>
+          <div class="ctrl"><label for="s1-b"><var>b</var> bias</label><input type="range" id="s1-b" min="-2" max="4" step="0.01"><output id="s1-b-out" for="s1-b"></output></div>
+        </div>
+        <div class="stack">
+          <p class="say" id="s1-goal"></p>
+          <div class="btn-row">
+            <button type="button" class="btn small" id="s1-reset-line">Reset line</button>
+            <button type="button" class="btn small" id="s1-reset-pts">Reset points</button>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <div class="prose">
+      <p>Fitting by eye works for two knobs and six points. A real network has millions of weights, so it needs a number that says how wrong the line is, and a rule for which way to turn each knob. Calculus supplies both. The rest of the page uses these same six points, so if you move them, every later figure follows.</p>
+    </div>
+  </section>
+
+  <!-- ===================== PART 2 ===================== -->
+  <section class="part" id="loss" data-title="2 · Measuring the error">
+    <div class="prose">
+      <hgroup><p class="eyebrow">Part 2</p><h2>Measuring the error</h2></hgroup>
+      <p>For each data point (<var>x</var><sub><var>i</var></sub>, <var>y</var><sub><var>i</var></sub>), the neuron predicts <span class="m"><var>ŷ</var><sub><var>i</var></sub> = <var>w</var><var>x</var><sub><var>i</var></sub> + <var>b</var></span>. The gap between the prediction and the truth is the <b>error</b>:</p>
+      <div class="eq"><var class="c-err">e</var><sub><var>i</var></sub> = <var>ŷ</var><sub><var>i</var></sub> − <var>y</var><sub><var>i</var></sub></div>
+      <p>Some errors are positive and some are negative, so adding them up would let them cancel. Instead we square each error and take the average. This number is the <b>mean squared error</b>, and it is the neuron’s <b>loss</b>:</p>
+      <div class="eq"><var>L</var>(<var class="c-model">w</var>, <var class="c-model">b</var>) = <span class="frac"><span>1</span><span><var>n</var></span></span> <span>Σ</span><sub><var>i</var></sub> (<var class="c-model">w</var><var>x</var><sub><var>i</var></sub> + <var class="c-model">b</var> − <var>y</var><sub><var>i</var></sub>)<sup>2</sup></div>
+      <p>Switch the figure to squares. Each error becomes a real square with area <span class="m"><var>e</var><sub><var>i</var></sub><sup>2</sup></span>, and the loss is the average area. Training shrinks the squares.</p>
+    </div>
+
+    <figure class="fig">
+      <div class="fig-head">
+        <h3 class="fig-title">Every error, squared</h3>
+        <p class="fig-hint">Hover a point or a row to match them up.</p>
+      </div>
+      <div class="toolbar">
+        <div class="seg" role="group" aria-label="How to draw the errors" id="s2-mode">
+          <button type="button" data-v="lines" aria-pressed="false">Errors</button>
+          <button type="button" data-v="squares" aria-pressed="true">Squared errors</button>
+        </div>
+        <label class="check" for="s2-best"><input type="checkbox" id="s2-best">Show the best possible line</label>
+      </div>
+      <div class="split">
+        <div class="stack">
+          <div id="s2-plot"></div>
+          <div class="ctrls">
+            <div class="ctrl"><label for="s2-w"><var>w</var> weight</label><input type="range" id="s2-w" min="-1.5" max="4.5" step="0.01"><output id="s2-w-out" for="s2-w"></output></div>
+            <div class="ctrl"><label for="s2-b"><var>b</var> bias</label><input type="range" id="s2-b" min="-2" max="4" step="0.01"><output id="s2-b-out" for="s2-b"></output></div>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl" id="s2-table">
+            <thead><tr><th>Point</th><th><var>x</var></th><th><var>y</var></th><th><var>ŷ</var></th><th><var>e</var></th><th><var>e</var><sup>2</sup></th></tr></thead>
+            <tbody></tbody>
+            <tfoot><tr><td colspan="5">Mean of <var>e</var><sup>2</sup>, the loss <var>L</var></td><td id="s2-mean"></td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+    </figure>
+
+    <div class="prose">
+      <div class="idea"><span class="idea-label">Key idea</span><span>The data is fixed. Only <var>w</var> and <var>b</var> move. So the loss is a function of the two knobs, and training is the search for the knob settings where that function is smallest.</span></div>
+      <div class="quiz">
+        <p class="quiz-label">Check yourself</p>
+        <p class="quiz-q">The line predicts <span class="m"><var>ŷ</var> = 3</span> for a point whose true value is <span class="m"><var>y</var> = 5</span>. What is that point’s squared error?</p>
+        <div class="quiz-opts">
+          <button type="button" class="btn quiz-opt" data-fb="That’s the error itself, e = ŷ − y. Squaring removes the sign.">−2</button>
+          <button type="button" class="btn quiz-opt" data-correct data-fb="e = 3 − 5 = −2, and (−2)² = 4.">4</button>
+          <button type="button" class="btn quiz-opt" data-fb="Squaring means multiplying the error by itself: (−2) × (−2).">8</button>
+        </div>
+        <p class="quiz-fb" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== PART 3 ===================== -->
+  <section class="part" id="derivative" data-title="3 · The derivative">
+    <div class="prose">
+      <hgroup><p class="eyebrow">Part 3</p><h2>The derivative</h2></hgroup>
+      <p>Freeze <var>b</var> for a moment. The loss then depends on <var>w</var> alone, and you can draw it as a curve. For a linear neuron with squared error, that curve is always a parabola: a bowl with one lowest point.</p>
+      <p>Training asks one question over and over. <span class="hl">If I nudge <var>w</var>, does the loss go up or down, and how fast?</span> Pick two points on the curve a distance <var>h</var> apart. The slope of the line through them, rise over run, is</p>
+      <div class="eq">secant slope = <span class="frac"><span><var>L</var>(<var>w</var> + <var>h</var>) − <var>L</var>(<var>w</var>)</span><span><var>h</var></span></span></div>
+      <p>Now shrink <var>h</var>. The two points merge, and the secant line turns into the tangent line, which just touches the curve. Its slope is the <b>derivative</b>:</p>
+      <div class="eq"><span class="frac c-grad"><span>d<var>L</var></span><span>d<var>w</var></span></span> = lim<sub><var>h</var>→0</sub> <span class="frac"><span><var>L</var>(<var>w</var> + <var>h</var>) − <var>L</var>(<var>w</var>)</span><span><var>h</var></span></span></div>
+    </div>
+
+    <figure class="fig">
+      <div class="fig-head">
+        <h3 class="fig-title">Shrink <var>h</var> and the secant becomes the tangent</h3>
+        <p class="fig-hint">Drag the red dot along the bowl.</p>
+      </div>
+      <ul class="legend" aria-label="Legend">
+        <li><span class="sw" style="--c: var(--err)"></span>loss <var>L</var>(<var>w</var>) at the current <var>b</var></li>
+        <li><span class="sw dash" style="--c: var(--ink-3)"></span>secant through <var>w</var> and <var>w</var> + <var>h</var></li>
+        <li><span class="sw" style="--c: var(--grad)"></span>tangent, slope d<var>L</var>/d<var>w</var></li>
+      </ul>
+      <div class="split">
+        <div id="s3-plot"></div>
+        <div class="stack">
+          <div class="ctrls">
+            <div class="ctrl" style="--thumb: var(--ink-3)"><label for="s3-h">gap <var>h</var></label><input type="range" id="s3-h" min="0" max="100" step="1" value="0"><output id="s3-h-out" for="s3-h"></output></div>
+            <div class="ctrl"><label for="s3-w"><var>w</var> weight</label><input type="range" id="s3-w" min="-1.5" max="4.5" step="0.01"><output id="s3-w-out" for="s3-w"></output></div>
+            <div class="ctrl"><label for="s3-b"><var>b</var> frozen</label><input type="range" id="s3-b" min="-2" max="4" step="0.01"><output id="s3-b-out" for="s3-b"></output></div>
+          </div>
+          <div class="btn-row"><button type="button" class="btn small" id="s3-anim">Shrink <var>h</var> toward 0</button></div>
+          <div class="readouts">
+            <div class="ro"><span class="ro-k">Secant slope</span><span class="ro-v" id="s3-sec"></span></div>
+            <div class="ro"><span class="ro-k">Derivative <span class="m">d<var>L</var>/d<var>w</var></span></span><span class="ro-v grad" id="s3-der"></span></div>
+            <div class="ro"><span class="ro-k">Difference</span><span class="ro-v" id="s3-gap"></span></div>
+          </div>
+        </div>
+      </div>
+      <p class="say" id="s3-say" aria-live="polite"></p>
+    </figure>
+
+    <div class="prose">
+      <p>The sign of the derivative tells you which way is downhill, and its size tells you how steep the hill is.</p>
+      <div class="cards3">
+        <div class="sign-card"><span class="m">d<var>L</var>/d<var>w</var> &gt; 0</span><p>Loss rises as <var>w</var> grows. Lower <var>w</var>.</p></div>
+        <div class="sign-card"><span class="m">d<var>L</var>/d<var>w</var> &lt; 0</span><p>Loss falls as <var>w</var> grows. Raise <var>w</var>.</p></div>
+        <div class="sign-card"><span class="m">d<var>L</var>/d<var>w</var> = 0</span><p>Flat ground: the bottom of the bowl, the best <var>w</var> for this <var>b</var>.</p></div>
+      </div>
+      <p>The derivative also predicts change. For a small nudge Δ<var>w</var>, the loss changes by about <span class="m">(d<var>L</var>/d<var>w</var>) × Δ<var>w</var></span>. That one approximation is what every training step relies on.</p>
+      <div class="quiz">
+        <p class="quiz-label">Check yourself</p>
+        <p class="quiz-q">At the current <var>w</var>, <span class="m">d<var>L</var>/d<var>w</var> = −4</span>. You raise <var>w</var> by 0.01. About how does the loss change?</p>
+        <div class="quiz-opts">
+          <button type="button" class="btn quiz-opt" data-correct data-fb="Change ≈ slope × nudge = −4 × 0.01 = −0.04. A negative slope means the loss falls as w rises.">It falls by about 0.04</button>
+          <button type="button" class="btn quiz-opt" data-fb="The sign of the slope gives the direction. Negative means the loss goes down as w goes up.">It rises by about 0.04</button>
+          <button type="button" class="btn quiz-opt" data-fb="The slope is a rate. Multiply it by the size of the nudge: −4 × 0.01.">It falls by about 4</button>
+        </div>
+        <p class="quiz-fb" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== PART 4 ===================== -->
+  <section class="part" id="rules" data-title="4 · Derivative rules">
+    <div class="prose">
+      <hgroup><p class="eyebrow">Part 4</p><h2>Derivative rules</h2></hgroup>
+      <p>Taking a limit every time would be slow. A handful of rules give exact derivatives in one line, and four of them cover everything a linear neuron needs.</p>
+    </div>
+
+    <figure class="fig">
+      <div class="fig-head">
+        <h3 class="fig-title">A function and its slope, side by side</h3>
+        <p class="fig-hint">Move across either graph to scrub <var>x</var>.</p>
+      </div>
+      <div class="toolbar">
+        <div class="seg" role="group" aria-label="Choose a function" id="s4-fn">
+          <button type="button" data-v="sq" aria-pressed="true"><var>x</var><sup>2</sup></button>
+          <button type="button" data-v="cube" aria-pressed="false"><var>x</var><sup>3</sup></button>
+          <button type="button" data-v="lin" aria-pressed="false">3<var>x</var> + 1</button>
+          <button type="button" data-v="err" aria-pressed="false">(<var>x</var> − 2)<sup>2</sup></button>
+        </div>
+        <div class="eq" id="s4-formula" style="font-size: 20px; padding: 0"></div>
+      </div>
+      <div class="split">
+        <div class="stack">
+          <div><p class="mini-title">The function <var>f</var></p><div id="s4-f"></div></div>
+          <div><p class="mini-title">Its derivative <var>f</var>′, the slope at each <var>x</var></p><div id="s4-d"></div></div>
+        </div>
+        <div class="stack">
+          <div class="ctrls"><div class="ctrl" style="--thumb: var(--grad)"><label for="s4-x"><var>x</var></label><input type="range" id="s4-x" min="-3" max="3" step="0.01" value="1.2"><output id="s4-x-out" for="s4-x"></output></div></div>
+          <p class="say" id="s4-read" aria-live="polite"></p>
+          <p class="say" id="s4-rule"></p>
+        </div>
+      </div>
+    </figure>
+
+    <div class="prose">
+      <div class="tbl-wrap">
+        <table class="tbl rules-tbl">
+          <thead><tr><th>Rule</th><th style="text-align:left">Formula</th><th style="text-align:left">Example</th></tr></thead>
+          <tbody>
+            <tr><td>Constant</td><td style="text-align:left" class="m">(<var>c</var>)′ = 0</td><td style="text-align:left" class="m">(7)′ = 0</td></tr>
+            <tr><td>Power</td><td style="text-align:left" class="m">(<var>x</var><sup><var>n</var></sup>)′ = <var>n</var><var>x</var><sup><var>n</var>−1</sup></td><td style="text-align:left" class="m">(<var>x</var><sup>3</sup>)′ = 3<var>x</var><sup>2</sup></td></tr>
+            <tr><td>Constant multiple</td><td style="text-align:left" class="m">(<var>c</var>·<var>f</var>)′ = <var>c</var>·<var>f</var>′</td><td style="text-align:left" class="m">(5<var>x</var><sup>2</sup>)′ = 10<var>x</var></td></tr>
+            <tr><td>Sum</td><td style="text-align:left" class="m">(<var>f</var> + <var>g</var>)′ = <var>f</var>′ + <var>g</var>′</td><td style="text-align:left" class="m">(<var>x</var><sup>2</sup> + 3<var>x</var>)′ = 2<var>x</var> + 3</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Apply the power rule to one squared error, <span class="m"><var>e</var><sup>2</sup></span>, and you get <span class="m">2<var>e</var></span>. <span class="hl">Big errors push back hard; small errors push gently; zero error pushes not at all.</span> The last preset above, <span class="m">(<var>x</var> − 2)<sup>2</sup></span>, is exactly a squared error with target 2.</p>
+    </div>
+  </section>
+
+  <!-- ===================== PART 5 ===================== -->
+  <section class="part" id="chain" data-title="5 · The chain rule">
+    <div class="prose">
+      <hgroup><p class="eyebrow">Part 5</p><h2>The chain rule</h2></hgroup>
+      <p>The loss never touches <var>w</var> directly. The weight changes the prediction, the prediction changes the error, and the error changes the loss. Each link is easy on its own. The <b>chain rule</b> says the slope of the whole chain is the product of the slopes of its links:</p>
+      <div class="eq"><span class="frac c-grad"><span>∂<var>L</var></span><span>∂<var>w</var></span></span> = <span class="frac"><span>∂<var>L</var></span><span>∂<var>e</var></span></span> · <span class="frac"><span>∂<var>e</var></span><span>∂<var>ŷ</var></span></span> · <span class="frac"><span>∂<var>ŷ</var></span><span>∂<var>w</var></span></span> = <span class="c-err">2<var>e</var></span> · 1 · <var>x</var></div>
+      <p>The curly ∂ means the same derivative as in part 3, taken while every other input stays still. Working backward from the loss to the weights, link by link, is called <b>backpropagation</b>. Step through it for one data point.</p>
+    </div>
+
+    <figure class="fig">
+      <div class="fig-head">
+        <h3 class="fig-title">Backpropagation, one link at a time</h3>
+        <p class="fig-hint">Pick a data point, then press Next step.</p>
+      </div>
+      <div class="toolbar">
+        <div class="seg" role="group" aria-label="Data point" id="s5-points"></div>
+        <span class="say" id="s5-pt"></span>
+      </div>
+      <div id="s5-graph" class="graph-host"></div>
+      <div class="step-panel" id="s5-panel" aria-live="polite"></div>
+      <div class="split even">
+        <div class="btn-row">
+          <button type="button" class="btn" id="s5-back">Back</button>
+          <button type="button" class="btn primary" id="s5-next">Next step</button>
+          <button type="button" class="btn" id="s5-play">Play all</button>
+          <button type="button" class="btn" id="s5-reset">Start over</button>
+        </div>
+        <div class="ctrls">
+          <div class="ctrl"><label for="s5-w"><var>w</var> weight</label><input type="range" id="s5-w" min="-1.5" max="4.5" step="0.01"><output id="s5-w-out" for="s5-w"></output></div>
+          <div class="ctrl"><label for="s5-b"><var>b</var> bias</label><input type="range" id="s5-b" min="-2" max="4" step="0.01"><output id="s5-b-out" for="s5-b"></output></div>
+        </div>
+      </div>
+    </figure>
+
+    <div class="prose">
+      <p>A derivative is a prediction, so you can test it. Nudge <var>w</var> by Δ, measure how much the loss for this point really changes, and compare that with what <span class="m">∂<var>L</var>/∂<var>w</var> × Δ</span> predicted.</p>
+    </div>
+
+    <figure class="fig">
+      <div class="fig-head">
+        <h3 class="fig-title">Test the chain rule with a nudge</h3>
+        <p class="fig-hint">Uses the point picked above. Your <var>w</var> stays where it is.</p>
+      </div>
+      <div class="split even">
+        <div class="ctrls"><div class="ctrl" style="--thumb: var(--ink-3)"><label for="s5-d">nudge Δ</label><input type="range" id="s5-d" min="0" max="100" step="1" value="0"><output id="s5-d-out" for="s5-d"></output></div></div>
+        <div class="readouts">
+          <div class="ro"><span class="ro-k">Actual change <span class="m"><var>L</var>(<var>w</var> + Δ) − <var>L</var>(<var>w</var>)</span></span><span class="ro-v err" id="s5-act"></span></div>
+          <div class="ro"><span class="ro-k">Predicted <span class="m">∂<var>L</var>/∂<var>w</var> × Δ</span></span><span class="ro-v grad" id="s5-pred"></span></div>
+          <div class="ro"><span class="ro-k">Miss</span><span class="ro-v" id="s5-miss"></span></div>
+        </div>
+      </div>
+      <p class="say" id="s5-nsay"></p>
+    </figure>
+
+    <div class="prose">
+      <p>The whole-dataset loss is an average of per-point losses, and the derivative of an average is the average of the derivatives. So for all <var>n</var> points at once:</p>
+      <div class="eq"><span class="frac c-grad"><span>∂<var>L</var></span><span>∂<var>w</var></span></span> = <span class="frac"><span>2</span><span><var>n</var></span></span> Σ<sub><var>i</var></sub> <var class="c-err">e</var><sub><var>i</var></sub><var>x</var><sub><var>i</var></sub><span class="gap"></span><span class="frac c-grad"><span>∂<var>L</var></span><span>∂<var>b</var></span></span> = <span class="frac"><span>2</span><span><var>n</var></span></span> Σ<sub><var>i</var></sub> <var class="c-err">e</var><sub><var>i</var></sub></div>
+      <div class="quiz">
+        <p class="quiz-label">Check yourself</p>
+        <p class="quiz-q">One data point has <span class="m"><var>x</var> = 0</span>. What is <span class="m">∂<var>L</var>/∂<var>w</var></span> for that point?</p>
+        <div class="quiz-opts">
+          <button type="button" class="btn quiz-opt" data-correct data-fb="∂L/∂w = 2e·x, and x = 0. When the input is zero, the weight had no effect on the output, so it gets no blame.">0</button>
+          <button type="button" class="btn quiz-opt" data-fb="That’s ∂L/∂b. For w the chain picks up one more factor, x.">2<var>e</var></button>
+          <button type="button" class="btn quiz-opt" data-fb="Look at 2e·x. With x = 0 the product is zero whatever w is.">It depends on <var>w</var></button>
+        </div>
+        <p class="quiz-fb" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== PART 6 ===================== -->
+  <section class="part" id="gradient" data-title="6 · The gradient">
+    <div class="prose">
+      <hgroup><p class="eyebrow">Part 6</p><h2>The gradient</h2></hgroup>
+      <p>With two knobs, the loss is a surface over the (<var>w</var>, <var>b</var>) plane. The map below shows it from above. Stronger color means higher loss, and the bowl’s bottom is the best fit.</p>
+      <p>A <b>partial derivative</b> turns one knob and holds the other still. <span class="m">∂<var>L</var>/∂<var>w</var></span> is the slope of the slice you get by walking left to right through your point. <span class="m">∂<var>L</var>/∂<var>b</var></span> is the slope of the slice walking bottom to top. Stack both into a vector and you have the <b>gradient</b>:</p>
+      <div class="eq"><span class="c-grad">∇<var>L</var></span> = ( <span class="frac"><span>∂<var>L</var></span><span>∂<var>w</var></span></span> , <span class="frac"><span>∂<var>L</var></span><span>∂<var>b</var></span></span> )</div>
+      <p><span class="hl">The gradient points uphill, in the direction where the loss rises fastest.</span> So its negative, <span class="m">−∇<var>L</var></span>, points straight downhill.</p>
+    </div>
+
+    <figure class="fig">
+      <div class="fig-head">
+        <h3 class="fig-title">The loss surface, seen from above</h3>
+        <p class="fig-hint">Drag on the map to move (<var>w</var>, <var>b</var>). On a phone, tap.</p>
+      </div>
+      <ul class="legend" aria-label="Legend">
+        <li><span class="sw dot" style="--c: var(--model)"></span>your (<var>w</var>, <var>b</var>)</li>
+        <li><span class="sw" style="--c: var(--grad)"></span>downhill direction −∇<var>L</var></li>
+        <li><span class="sw" style="--c: var(--ink); opacity: .35; height: 1.5px"></span>contour: equal loss</li>
+        <li><span class="sw dash" style="--c: var(--ink-3)"></span>slices</li>
+      </ul>
+      <div class="split">
+        <div>
+          <div id="s6-map"></div>
+          <div class="heat-legend"><span>low loss</span><span class="ramp" aria-hidden="true"></span><span>high loss</span><span style="margin-left:auto">× best fit</span></div>
+        </div>
+        <div class="stack">
+          <div><p class="mini-title">Slice with <var>b</var> held still</p><div id="s6-sw"></div></div>
+          <div><p class="mini-title">Slice with <var>w</var> held still</p><div id="s6-sb"></div></div>
+          <div class="readouts">
+            <div class="ro"><span class="ro-k"><span class="m">∂<var>L</var>/∂<var>w</var></span> = <span class="m"><span class="frac"><span>2</span><span><var>n</var></span></span>Σ<var>e</var><sub><var>i</var></sub><var>x</var><sub><var>i</var></sub></span></span><span class="ro-v grad" id="s6-gw"></span></div>
+            <div class="ro"><span class="ro-k"><span class="m">∂<var>L</var>/∂<var>b</var></span> = <span class="m"><span class="frac"><span>2</span><span><var>n</var></span></span>Σ<var>e</var><sub><var>i</var></sub></span></span><span class="ro-v grad" id="s6-gb"></span></div>
+            <div class="ro"><span class="ro-k">Steepness |∇<var>L</var>|</span><span class="ro-v" id="s6-gn"></span></div>
+          </div>
+        </div>
+      </div>
+      <p class="say" id="s6-say"></p>
+    </figure>
+
+    <div class="prose">
+      <p>The ellipses are contours: every point on one has the same loss. The gradient always crosses them at a right angle, because moving along a contour leaves the loss unchanged.</p>
+      <div class="quiz">
+        <p class="quiz-label">Check yourself</p>
+        <p class="quiz-q">At some point the gradient is <span class="m">∇<var>L</var> = (3, −1)</span>. Which way should (<var>w</var>, <var>b</var>) move to lower the loss?</p>
+        <div class="quiz-opts">
+          <button type="button" class="btn quiz-opt" data-correct data-fb="Step against the gradient: −∇L = (−3, 1). Lower w, raise b.">Lower <var>w</var>, raise <var>b</var></button>
+          <button type="button" class="btn quiz-opt" data-fb="That follows the gradient, which points uphill.">Raise <var>w</var>, lower <var>b</var></button>
+          <button type="button" class="btn quiz-opt" data-fb="The two partials have opposite signs, so the knobs move in opposite directions.">Raise both</button>
+        </div>
+        <p class="quiz-fb" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== PART 7 ===================== -->
+  <section class="part" id="descent" data-title="7 · Gradient descent">
+    <div class="prose">
+      <hgroup><p class="eyebrow">Part 7</p><h2>Gradient descent</h2></hgroup>
+      <p>Now put the pieces together. Start anywhere. Compute the gradient. Take a small step against it. Repeat. That loop is <b>gradient descent</b>, and it is how neural networks are trained.</p>
+      <div class="eq"><var class="c-model">w</var> <span class="arr">←</span> <var class="c-model">w</var> − <var>η</var> <span class="frac c-grad"><span>∂<var>L</var></span><span>∂<var>w</var></span></span><span class="gap"></span><var class="c-model">b</var> <span class="arr">←</span> <var class="c-model">b</var> − <var>η</var> <span class="frac c-grad"><span>∂<var>L</var></span><span>∂<var>b</var></span></span></div>
+      <p>The <b>learning rate</b> <var>η</var> (eta) sets the step size. Too small and training crawls. Too large and each step overshoots the valley and lands higher on the far side, until the loss explodes. For a bowl like this one there is an exact limit: <var>η</var> must stay below 2 divided by the bowl’s steepest curvature. The red mark on the slider shows that limit for your current data.</p>
+    </div>
+
+    <figure class="fig">
+      <div class="fig-head">
+        <h3 class="fig-title">Gradient descent on your six points</h3>
+        <p class="fig-hint">Click the map to pick a starting point.</p>
+      </div>
+      <div class="gd-controls">
+        <div class="ctrl" style="--thumb: var(--grad)">
+          <label for="s7-eta">learning rate <var>η</var></label>
+          <div class="range-wrap"><input type="range" id="s7-eta" min="0.005" max="0.4" step="0.005" value="0.15"><span class="crit" id="s7-crit"><span id="s7-crit-l">limit</span></span></div>
+          <output id="s7-eta-out" for="s7-eta"></output>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="btn primary" id="s7-run">Run</button>
+          <button type="button" class="btn" id="s7-step">Step</button>
+          <button type="button" class="btn" id="s7-reset">Reset</button>
+        </div>
+      </div>
+      <div class="chips" role="group" aria-label="Learning rate presets. Each restarts from w = −0.50, b = 3.50.">
+        <button type="button" class="chip" data-k="0.07">Tiny steps</button>
+        <button type="button" class="chip" data-k="0.5">Smooth</button>
+        <button type="button" class="chip" data-k="0.93">Zigzag</button>
+        <button type="button" class="chip" data-k="1.05">Too big</button>
+      </div>
+      <div class="split even">
+        <div>
+          <div id="s7-map"></div>
+          <div class="heat-legend"><span>low loss</span><span class="ramp" aria-hidden="true"></span><span>high loss</span><span style="margin-left:auto">× best fit</span></div>
+        </div>
+        <div class="stack">
+          <div><p class="mini-title">Your line</p><div id="s7-data"></div></div>
+          <div><p class="mini-title">Loss after each step</p><div id="s7-loss"></div></div>
+        </div>
+      </div>
+      <div class="gd-foot">
+        <span class="pill" id="s7-status">Ready</span>
+        <div class="upd" id="s7-update" aria-live="off"></div>
+      </div>
+      <p class="say" id="s7-note"></p>
+    </figure>
+
+    <div class="prose">
+      <p>Try the presets. Tiny steps creep along the valley floor. Smooth steps glide to the bottom. Near the limit, each step jumps across the valley and back, and the loss curve wobbles as it falls. Past the limit, the jumps grow and the loss shoots up.</p>
+      <div class="quiz">
+        <p class="quiz-label">Check yourself</p>
+        <p class="quiz-q">Your loss bounces up and down and gets bigger every step. What should you change?</p>
+        <div class="quiz-opts">
+          <button type="button" class="btn quiz-opt" data-correct data-fb="Each step overshoots the valley. Smaller steps land inside it. In the figure, any η left of the red mark converges.">Lower the learning rate</button>
+          <button type="button" class="btn quiz-opt" data-fb="Bigger steps overshoot even more. Try the Too big preset to see it.">Raise the learning rate</button>
+          <button type="button" class="btn quiz-opt" data-fb="More steps make a diverging run worse, because each one lands higher than the last.">Run more steps</button>
+        </div>
+        <p class="quiz-fb" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== PART 8 ===================== -->
+  <section class="part" id="many" data-title="8 · Many inputs">
+    <div class="prose">
+      <hgroup><p class="eyebrow">Part 8</p><h2>Many inputs, same calculus</h2></hgroup>
+      <p>Real neurons take many inputs, and each input gets its own weight:</p>
+      <div class="eq"><var>ŷ</var> = <var class="c-model">w</var><sub>1</sub><var>x</var><sub>1</sub> + <var class="c-model">w</var><sub>2</sub><var>x</var><sub>2</sub> + <var class="c-model">w</var><sub>3</sub><var>x</var><sub>3</sub> + <var class="c-model">b</var></div>
+      <p>The chain rule doesn’t change. Each weight’s link to <var>ŷ</var> has slope <var>x</var><sub><var>j</var></sub>, so</p>
+      <div class="eq"><span class="frac c-grad"><span>∂<var>L</var></span><span>∂<var>w</var><sub><var>j</var></sub></span></span> = <span class="c-err">2<var>e</var></span> · <var>x</var><sub><var>j</var></sub></div>
+      <p><span class="hl">Each weight is blamed in proportion to its own input.</span> Set an input to zero below and watch its weight’s gradient vanish.</p>
+    </div>
+
+    <figure class="fig">
+      <div class="fig-head">
+        <h3 class="fig-title">A neuron with three inputs</h3>
+        <p class="fig-hint">Edge thickness shows the size of each weight.</p>
+      </div>
+      <div class="split even">
+        <div class="stack">
+          <div id="s8-diagram" class="graph-host"></div>
+          <div class="readouts">
+            <div class="ro"><span class="ro-k">Prediction <var>ŷ</var></span><span class="ro-v" id="s8-yh"></span></div>
+            <div class="ro"><span class="ro-k">Error <span class="m"><var>e</var> = <var>ŷ</var> − <var>y</var></span></span><span class="ro-v err" id="s8-e"></span></div>
+            <div class="ro"><span class="ro-k">Loss <span class="m"><var>L</var> = <var>e</var><sup>2</sup></span></span><span class="ro-v" id="s8-L"></span></div>
+          </div>
+        </div>
+        <div class="inputs-grid">
+          <fieldset>
+            <legend>Inputs and target</legend>
+            <div class="ctrl" style="--thumb: var(--ink-3)"><label for="s8-x0"><var>x</var><sub>1</sub></label><input type="range" id="s8-x0" min="-2" max="2" step="0.05"><output id="s8-x0-out" for="s8-x0"></output></div>
+            <div class="ctrl" style="--thumb: var(--ink-3)"><label for="s8-x1"><var>x</var><sub>2</sub></label><input type="range" id="s8-x1" min="-2" max="2" step="0.05"><output id="s8-x1-out" for="s8-x1"></output></div>
+            <div class="ctrl" style="--thumb: var(--ink-3)"><label for="s8-x2"><var>x</var><sub>3</sub></label><input type="range" id="s8-x2" min="-2" max="2" step="0.05"><output id="s8-x2-out" for="s8-x2"></output></div>
+            <div class="ctrl" style="--thumb: var(--ink-3)"><label for="s8-y"><var>y</var></label><input type="range" id="s8-y" min="-3" max="3" step="0.05"><output id="s8-y-out" for="s8-y"></output></div>
+          </fieldset>
+          <fieldset>
+            <legend>Weights and bias</legend>
+            <div class="ctrl"><label for="s8-w0"><var>w</var><sub>1</sub></label><input type="range" id="s8-w0" min="-2" max="2" step="0.01"><output id="s8-w0-out" for="s8-w0"></output></div>
+            <div class="ctrl"><label for="s8-w1"><var>w</var><sub>2</sub></label><input type="range" id="s8-w1" min="-2" max="2" step="0.01"><output id="s8-w1-out" for="s8-w1"></output></div>
+            <div class="ctrl"><label for="s8-w2"><var>w</var><sub>3</sub></label><input type="range" id="s8-w2" min="-2" max="2" step="0.01"><output id="s8-w2-out" for="s8-w2"></output></div>
+            <div class="ctrl"><label for="s8-bb"><var>b</var></label><input type="range" id="s8-bb" min="-2" max="2" step="0.01"><output id="s8-bb-out" for="s8-bb"></output></div>
+          </fieldset>
+        </div>
+      </div>
+      <div>
+        <p class="mini-title">Gradient for each parameter</p>
+        <div class="gbars" id="s8-bars"></div>
+      </div>
+      <div class="btn-row">
+        <button type="button" class="btn primary" id="s8-step">Take one step (<var>η</var> = 0.1)</button>
+        <button type="button" class="btn" id="s8-new">New example</button>
+      </div>
+      <p class="say" id="s8-say" aria-live="polite"></p>
+    </figure>
+
+    <div class="prose">
+      <p>With many examples stacked as rows of a matrix <var>X</var> and their errors in a vector <var>e</var>, all the weight gradients come out of one formula. It is the same expression a deep learning library computes for every linear layer:</p>
+      <div class="eq"><span class="c-grad">∇<sub><var>w</var></sub><var>L</var></span> = <span class="frac"><span>2</span><span><var>n</var></span></span> <var>X</var><sup>⊤</sup><var class="c-err">e</var></div>
+      <p>Stack two linear layers with nothing in between and you still have one line: <span class="m"><var>W</var><sub>2</sub>(<var>W</var><sub>1</sub><var>x</var>) = (<var>W</var><sub>2</sub><var>W</var><sub>1</sub>)<var>x</var></span>. Each extra layer adds one link to the chain, and backpropagation multiplies through it exactly as in part 5. Real networks put a nonlinear function between layers so they can bend, and the chain rule handles that link too.</p>
+    </div>
+  </section>
+
+  <!-- ===================== CHEAT SHEET ===================== -->
+  <section class="part" id="cheatsheet" data-title="Cheat sheet">
+    <div class="prose">
+      <hgroup><p class="eyebrow">Summary</p><h2>Everything on one card</h2></hgroup>
+    </div>
+    <div class="sheet">
+      <div class="sheet-card"><h3>Model</h3><div class="eq"><var>ŷ</var> = <var>w</var><var>x</var> + <var>b</var></div><p>A linear neuron draws a line. <var>w</var> is its slope, <var>b</var> its height at <span class="m"><var>x</var> = 0</span>.</p></div>
+      <div class="sheet-card"><h3>Loss</h3><div class="eq"><var>L</var> = <span class="frac"><span>1</span><span><var>n</var></span></span>Σ(<var>ŷ</var><sub><var>i</var></sub> − <var>y</var><sub><var>i</var></sub>)<sup>2</sup></div><p>The average squared error. Zero only when every point sits on the line.</p></div>
+      <div class="sheet-card"><h3>Derivative</h3><div class="eq">Δ<var>L</var> ≈ <span class="frac"><span>d<var>L</var></span><span>d<var>w</var></span></span> Δ<var>w</var></div><p>How fast the loss changes as you nudge <var>w</var>. The sign says which way is downhill.</p></div>
+      <div class="sheet-card"><h3>Chain rule</h3><div class="eq"><span class="frac"><span>∂<var>L</var></span><span>∂<var>w</var></span></span> = <span class="frac"><span>∂<var>L</var></span><span>∂<var>ŷ</var></span></span> · <span class="frac"><span>∂<var>ŷ</var></span><span>∂<var>w</var></span></span></div><p>Multiply the local slopes along the path from <var>w</var> to <var>L</var>.</p></div>
+      <div class="sheet-card"><h3>Gradient</h3><div class="eq"><span class="frac"><span>∂<var>L</var></span><span>∂<var>w</var></span></span> = <span class="frac"><span>2</span><span><var>n</var></span></span>Σ<var>e</var><sub><var>i</var></sub><var>x</var><sub><var>i</var></sub></div><p>Each weight is blamed by the error times its input. For <var>b</var>, drop the <var>x</var><sub><var>i</var></sub>.</p></div>
+      <div class="sheet-card"><h3>Update</h3><div class="eq"><var>w</var> <span class="arr">←</span> <var>w</var> − <var>η</var> <span class="frac"><span>∂<var>L</var></span><span>∂<var>w</var></span></span></div><p>Step against the gradient. Keep <var>η</var> below the limit or the steps blow up.</p></div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="prose">
+      <p>Made by Eimon. All of the math runs live in your browser; nothing you do here leaves the page.</p>
+      <p data-home-link><a href="../">Back to the home page</a></p>
+    </div>
+  </footer>
+</main>
+
+<noscript><p style="text-align:center;padding:16px">The figures on this page need JavaScript to run.</p></noscript>
+
+<script>
+(() => {
+'use strict';
+
+/* ================= helpers ================= */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const NS = 'http://www.w3.org/2000/svg';
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const round = (v, d = 2) => Math.round(v * 10 ** d) / 10 ** d;
+const RM = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+function fmt(v, d = 2) {
+  if (!Number.isFinite(v)) return Number.isNaN(v) ? '—' : (v > 0 ? '∞' : '−∞');
+  const a = Math.abs(v);
+  if (a >= 1e5) return (v < 0 ? '−' : '') + a.toExponential(1);
+  const s = a.toFixed(d);
+  return (v < 0 && Number(s) !== 0 ? '−' : '') + s;
+}
+const paren = (v, d = 2) => (v < 0 ? `(${fmt(v, d)})` : fmt(v, d));
+function svg(tag, attrs, parent) {
+  const n = document.createElementNS(NS, tag);
+  if (attrs) setA(n, attrs);
+  if (parent) parent.appendChild(n);
+  return n;
+}
+function setA(n, attrs) {
+  for (const k in attrs) {
+    const v = attrs[k];
+    if (v == null) n.removeAttribute(k); else n.setAttribute(k, v);
+  }
+  return n;
+}
+function scale(d0, d1, r0, r1) {
+  const k = (r1 - r0) / (d1 - d0);
+  const f = v => r0 + (v - d0) * k;
+  f.inv = p => d0 + (p - r0) / k;
+  f.k = k;
+  return f;
+}
+function niceStep(span, count) {
+  const raw = span / Math.max(1, count), p = 10 ** Math.floor(Math.log10(raw)), m = raw / p;
+  return (m < 1.5 ? 1 : m < 3 ? 2 : m < 7 ? 5 : 10) * p;
+}
+function ticks(d0, d1, count) {
+  const step = niceStep(d1 - d0, count), values = [];
+  for (let v = Math.ceil(d0 / step - 1e-9) * step; v <= d1 + step * 1e-9; v += step) values.push(Math.abs(v) < step * 1e-6 ? 0 : v);
+  return { values, step };
+}
+const tickFmt = (v, step) => fmt(v, Math.max(0, -Math.floor(Math.log10(step) + 1e-9)));
+function niceCeil(v) {
+  if (!(v > 0) || !Number.isFinite(v)) return 1;
+  const s = niceStep(v, 5);
+  return Math.ceil(v / s - 1e-9) * s;
+}
+function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function hexRGB(h) {
+  h = h.replace('#', '');
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  const n = parseInt(h.slice(0, 6), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+const pd = (a, b) => `<span class="m">∂<var>${a}</var>/∂<var>${b}</var></span>`;
+
+/* ================= shared state ================= */
+const DX = [-2, 4], DY = [-2, 7];          // data plot window
+const WD = [-1.5, 4.5], BD = [-2, 4];      // parameter window (equal span → square map)
+const DATA0 = [[-1.4, -0.7], [-0.5, -0.1], [0.4, 1.9], [1.3, 2.5], [2.2, 4.8], [3.1, 5.35]];
+const START = { w: -0.5, b: 3.5 };
+const S = { data: DATA0.map(([x, y]) => ({ x, y })), w: START.w, b: START.b, dataV: 0, themeV: 0 };
+const subs = [];
+let queued = false;
+const on = fn => subs.push(fn);
+function update(patch) {
+  if (patch) Object.assign(S, patch);
+  if (!queued) { queued = true; requestAnimationFrame(flush); }
+}
+function flush() {
+  queued = false;
+  for (const f of subs) { try { f(); } catch (err) { console.error(err); } }
+}
+function dataChanged() { S.dataV++; update(); }
+
+function lossAt(w, b, D = S.data) {
+  let s = 0;
+  for (const p of D) { const e = w * p.x + b - p.y; s += e * e; }
+  return s / D.length;
+}
+function gradAt(w, b, D = S.data) {
+  let gw = 0, gb = 0;
+  for (const p of D) { const e = w * p.x + b - p.y; gw += e * p.x; gb += e; }
+  return [2 * gw / D.length, 2 * gb / D.length];
+}
+let statsCache = null;
+function stats() {
+  if (statsCache && statsCache.v === S.dataV) return statsCache;
+  const D = S.data, n = D.length;
+  let sx = 0, sy = 0, sxx = 0, sxy = 0;
+  for (const p of D) { sx += p.x; sy += p.y; sxx += p.x * p.x; sxy += p.x * p.y; }
+  const mx = sx / n, my = sy / n, vx = sxx / n - mx * mx, cxy = sxy / n - mx * my;
+  const w = vx > 1e-9 ? cxy / vx : 0, b = my - w * mx;
+  const a = sxx / n, c = mx;                       // L − L* = dᵀ A d with A = [[a, c], [c, 1]]
+  const tr = a + 1, det = a - c * c, disc = Math.sqrt(Math.max(0, tr * tr / 4 - det));
+  const l1 = tr / 2 + disc, l2 = Math.max(1e-9, tr / 2 - disc);
+  let v1 = Math.abs(c) > 1e-12 ? [c, l1 - a] : (a >= 1 ? [1, 0] : [0, 1]);
+  const nv = Math.hypot(v1[0], v1[1]);
+  v1 = [v1[0] / nv, v1[1] / nv];
+  statsCache = { v: S.dataV, n, w, b, Lmin: lossAt(w, b, D), l1, l2, v1, v2: [-v1[1], v1[0]], etaCrit: 1 / l1 };
+  return statsCache;
+}
+function eqHTML(w, b) {
+  return `<var>ŷ</var> = ${fmt(w)}<var>x</var> ${b < 0 ? '−' : '+'} ${fmt(Math.abs(b))}`;
+}
+
+/* ================= plot primitives ================= */
+let uid = 0;
+class Plot {
+  constructor(host, o) {
+    this.o = Object.assign({ m: { t: 10, r: 12, b: 26, l: 38 }, aspect: 0.62, minH: 220, maxH: 440 }, o);
+    this.host = host;
+    this.x = o.x.slice();
+    this.y = o.y.slice();
+    host.classList.add('plot-host');
+    if (o.canvas) {
+      this.canvas = document.createElement('canvas');
+      this.canvas.className = 'plot-canvas';
+      host.appendChild(this.canvas);
+      this.ctx = this.canvas.getContext('2d');
+    }
+    this.svg = svg('svg', { class: 'plot', role: 'img', 'aria-label': o.label || '' }, host);
+    const id = 'clip' + (++uid);
+    this.clip = svg('rect', {}, svg('clipPath', { id }, svg('defs', {}, this.svg)));
+    this.gGrid = svg('g', { class: 'grid' }, this.svg);
+    this.gAxis = svg('g', {}, this.svg);
+    this.g = svg('g', { 'clip-path': `url(#${id})` }, this.svg);
+    this.gLab = svg('g', {}, this.svg);
+    this.gTop = svg('g', {}, this.svg);
+    this.layers = {};
+    this.W = 0;
+    this.layoutV = 0;
+    new ResizeObserver(() => this.resize()).observe(host);
+    this.resize();
+  }
+  layer(name) { return this.layers[name] || (this.layers[name] = svg('g', {}, this.g)); }
+  resize() {
+    const W = Math.floor(this.host.clientWidth);
+    if (!W || W === this.W) return;
+    this.W = W;
+    const m = this.o.m;
+    if (this.o.equal) this.H = Math.round((W - m.l - m.r) * (this.y[1] - this.y[0]) / (this.x[1] - this.x[0]) + m.t + m.b);
+    else this.H = Math.round(clamp(W * this.o.aspect, this.o.minH, this.o.maxH));
+    this.layout();
+  }
+  layout() {
+    const { W, H } = this, m = this.o.m;
+    setA(this.svg, { width: W, height: H, viewBox: `0 0 ${W} ${H}` });
+    this.inner = { x: m.l, y: m.t, w: W - m.l - m.r, h: H - m.t - m.b };
+    this.sx = scale(this.x[0], this.x[1], m.l, W - m.r);
+    this.sy = scale(this.y[0], this.y[1], H - m.b, m.t);
+    setA(this.clip, { x: m.l, y: m.t, width: this.inner.w, height: this.inner.h });
+    if (this.canvas) {
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      Object.assign(this.canvas.style, { left: m.l + 'px', top: m.t + 'px', width: this.inner.w + 'px', height: this.inner.h + 'px' });
+      this.canvas.width = Math.round(this.inner.w * dpr);
+      this.canvas.height = Math.round(this.inner.h * dpr);
+    }
+    this.layoutV++;
+    this.axes();
+    this.redraw();
+  }
+  redraw() { if (this.inner && this.draw) this.draw(); }
+  setDomain(x, y) {
+    const diff = (a, b) => a && (Math.abs(a[0] - b[0]) > 1e-12 || Math.abs(a[1] - b[1]) > 1e-12);
+    if (diff(x, this.x) || diff(y, this.y)) {
+      if (x) this.x = x.slice();
+      if (y) this.y = y.slice();
+      if (this.W) this.layout();
+      return true;
+    }
+    return false;
+  }
+  axes() {
+    const I = this.inner, o = this.o;
+    this.gGrid.textContent = '';
+    this.gAxis.textContent = '';
+    this.gLab.textContent = '';
+    const xt = ticks(this.x[0], this.x[1], Math.max(2, Math.round(I.w / 64)));
+    const yt = ticks(this.y[0], this.y[1], Math.max(2, Math.round(I.h / 44)));
+    for (const v of xt.values) {
+      const X = Math.round(this.sx(v)) + 0.5;
+      svg('line', { x1: X, x2: X, y1: I.y, y2: I.y + I.h, class: v === 0 ? 'zero' : null }, this.gGrid);
+      svg('text', { x: X, y: I.y + I.h + 17, 'text-anchor': 'middle', class: 'tick' }, this.gAxis).textContent = tickFmt(v, xt.step);
+    }
+    for (const v of yt.values) {
+      const Y = Math.round(this.sy(v)) + 0.5;
+      svg('line', { x1: I.x, x2: I.x + I.w, y1: Y, y2: Y, class: v === 0 ? 'zero' : null }, this.gGrid);
+      svg('text', { x: I.x - 7, y: Y + 4, 'text-anchor': 'end', class: 'tick' }, this.gAxis).textContent = tickFmt(v, yt.step);
+    }
+    svg('line', { x1: I.x, x2: I.x + I.w, y1: I.y + I.h + 0.5, y2: I.y + I.h + 0.5, class: 'axis-line' }, this.gAxis);
+    svg('line', { x1: I.x - 0.5, x2: I.x - 0.5, y1: I.y, y2: I.y + I.h, class: 'axis-line' }, this.gAxis);
+    if (o.xLabel) svg('text', { x: I.x + I.w - 6, y: I.y + I.h - 8, 'text-anchor': 'end', class: 'ax-title' }, this.gLab).innerHTML = o.xLabel;
+    if (o.yLabel) svg('text', { x: I.x + 8, y: I.y + 17, class: 'ax-title' }, this.gLab).innerHTML = o.yLabel;
+  }
+  toData(e) {
+    const r = this.svg.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
+    return { px, py, x: this.sx.inv(px), y: this.sy.inv(py) };
+  }
+  inside(px, py) { const I = this.inner; return px >= I.x && px <= I.x + I.w && py >= I.y && py <= I.y + I.h; }
+  showTip(px, py, html) {
+    if (!this.tip) { this.tip = document.createElement('div'); this.tip.className = 'tip'; this.host.appendChild(this.tip); }
+    const t = this.tip;
+    t.innerHTML = html;
+    t.hidden = false;
+    const tw = t.offsetWidth, th = t.offsetHeight;
+    let left = px + 14, top = py - th - 10;
+    if (left + tw > this.W - 2) left = px - tw - 14;
+    if (top < 2) top = py + 16;
+    t.style.left = Math.max(0, left) + 'px';
+    t.style.top = top + 'px';
+  }
+  hideTip() { if (this.tip) this.tip.hidden = true; }
+}
+
+function drag(node, { start, move, end, key }) {
+  node.classList.add('draggable');
+  node.style.touchAction = 'none';
+  node.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    try { node.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+    node.classList.add('dragging');
+    if (start) start(e);
+    const mv = ev => { if (ev.pointerId === e.pointerId) move(ev); };
+    const up = ev => {
+      if (ev.pointerId !== e.pointerId) return;
+      node.classList.remove('dragging');
+      node.removeEventListener('pointermove', mv);
+      node.removeEventListener('pointerup', up);
+      node.removeEventListener('pointercancel', up);
+      if (end) end(ev);
+    };
+    node.addEventListener('pointermove', mv);
+    node.addEventListener('pointerup', up);
+    node.addEventListener('pointercancel', up);
+  });
+  if (key) {
+    node.setAttribute('tabindex', '0');
+    node.addEventListener('keydown', e => {
+      const k = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[e.key];
+      if (!k) return;
+      e.preventDefault();
+      key(k[0], k[1], e.shiftKey ? 5 : 1);
+    });
+  }
+}
+function handle(parent, label, aria, filled) {
+  const g = svg('g', { class: 'handle', role: 'slider', 'aria-label': aria }, parent);
+  svg('circle', { r: 13, class: 'focus-ring' }, g);
+  svg('circle', { r: 7.5, class: 'handle-dot' + (filled ? ' filled' : '') }, g);
+  svg('circle', { r: 19, class: 'hit' }, g);
+  if (label) svg('text', { x: 12, y: -11, class: 'handle-label' }, g).textContent = label;
+  return g;
+}
+function curveD(p, fn, d0, d1, n = 160) {
+  let d = '';
+  for (let i = 0; i <= n; i++) {
+    const v = lerp(d0, d1, i / n), y = clamp(p.sy(fn(v)), -1e4, 1e4);
+    d += (i ? 'L' : 'M') + p.sx(v).toFixed(1) + ',' + y.toFixed(1);
+  }
+  return d;
+}
+function tangentSeg(p, el, x, y, m, half = 70) {
+  const ux = p.sx.k, uy = p.sy.k * m, n = Math.hypot(ux, uy), X = p.sx(x), Y = p.sy(y);
+  setA(el, { x1: X - ux / n * half, y1: Y - uy / n * half, x2: X + ux / n * half, y2: Y + uy / n * half });
+}
+function bindRange(id, get, set, d = 2) {
+  const inp = document.getElementById(id), out = document.getElementById(id + '-out');
+  inp.addEventListener('input', () => set(Number(inp.value)));
+  const sync = () => { const v = get(); inp.value = v; if (out) out.textContent = fmt(v, d); };
+  on(sync);
+  return sync;
+}
+function segmented(el, onChange) {
+  const btns = $$('button', el);
+  btns.forEach(b => b.addEventListener('click', () => {
+    btns.forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    onChange(b.dataset.v, b);
+  }));
+}
+const setW = v => update({ w: round(clamp(v, WD[0], WD[1])) });
+const setB = v => update({ b: round(clamp(v, BD[0], BD[1])) });
+
+/* ================= data plot (line + points) ================= */
+function DataPlot(host, opt = {}) {
+  const p = new Plot(host, { x: DX, y: DY, xLabel: 'x', yLabel: 'y', label: opt.label || 'Data points and the neuron’s line', aspect: opt.aspect || 0.64, minH: opt.minH || 240, maxH: opt.maxH || 420 });
+  const gRes = p.layer('res'), gBest = p.layer('best'), gTri = p.layer('tri'), gLine = p.layer('line');
+  const best = svg('line', { class: 'best-line' }, gBest);
+  const line = svg('line', { class: 'model-line' }, gLine);
+  let tri = null, triRun, triRise;
+  if (opt.triangle) {
+    tri = svg('path', { class: 'tri' }, gTri);
+    triRun = svg('text', { class: 'tri-label', 'text-anchor': 'middle' }, gTri);
+    triRise = svg('text', { class: 'tri-label' }, gTri);
+    triRun.textContent = '1';
+    triRise.textContent = 'w';
+  }
+  const res = [], pts = [];
+  let mode = opt.residuals || 'none', hl = -1, showBest = false;
+  S.data.forEach((_, i) => {
+    res.push({ ln: svg('line', { class: 'res-line' }, gRes), sq: svg('rect', { class: 'res-sq' }, gRes) });
+    const g = svg('g', { class: 'pt' }, p.gTop);
+    svg('circle', { r: 11, class: 'pt-halo' }, g);
+    svg('circle', { r: 12, class: 'focus-ring' }, g);
+    svg('circle', { r: 5.5, class: 'pt-dot' }, g);
+    svg('circle', { r: 16, class: 'hit' }, g);
+    pts.push(g);
+    const tip = () => {
+      const d = S.data[i], yh = S.w * d.x + S.b;
+      p.showTip(p.sx(d.x), p.sy(d.y), `<b>Point ${i + 1}</b><br><var>x</var> = ${fmt(d.x)}, <var>y</var> = ${fmt(d.y)}<br><var>ŷ</var> = ${fmt(yh)}, <var>e</var> = ${fmt(yh - d.y)}`);
+    };
+    g.addEventListener('pointerenter', () => { tip(); if (opt.onHover) opt.onHover(i); });
+    g.addEventListener('pointerleave', () => { if (!g.classList.contains('dragging')) { p.hideTip(); if (opt.onHover) opt.onHover(-1); } });
+    if (opt.dragPoints) {
+      g.setAttribute('aria-label', `Data point ${i + 1}. Arrow keys move it.`);
+      drag(g, {
+        move: e => {
+          const d = p.toData(e);
+          S.data[i].x = round(clamp(d.x, DX[0] + 0.05, DX[1] - 0.05));
+          S.data[i].y = round(clamp(d.y, DY[0] + 0.05, DY[1] - 0.05));
+          dataChanged();
+          tip();
+        },
+        end: () => { p.hideTip(); if (opt.onHover) opt.onHover(-1); },
+        key: (dx, dy, m) => {
+          const d = S.data[i];
+          d.x = round(clamp(d.x + dx * 0.05 * m, DX[0] + 0.05, DX[1] - 0.05));
+          d.y = round(clamp(d.y + dy * 0.05 * m, DY[0] + 0.05, DY[1] - 0.05));
+          dataChanged();
+        }
+      });
+    }
+  });
+
+  let hB = null, hW = null, frozenX = null;
+  const handleX = () => {
+    let hx = 3.4;
+    const y = S.w * hx + S.b;
+    if (y > DY[1] - 0.25 && S.w > 0) hx = (DY[1] - 0.25 - S.b) / S.w;
+    else if (y < DY[0] + 0.25 && S.w < 0) hx = (DY[0] + 0.25 - S.b) / S.w;
+    return clamp(hx, 0.8, 3.4);
+  };
+  if (opt.handles) {
+    hB = handle(p.gTop, 'b', 'Bias handle. Drag up or down, or use the arrow keys.');
+    hW = handle(p.gTop, 'w', 'Weight handle. Drag up or down to tilt the line, or use the arrow keys.');
+    drag(hB, { move: e => setB(p.toData(e).y), key: (dx, dy, m) => setB(S.b + (dy || dx) * 0.05 * m) });
+    drag(hW, {
+      start: () => { frozenX = handleX(); },
+      move: e => setW((p.toData(e).y - S.b) / frozenX),
+      end: () => { frozenX = null; },
+      key: (dx, dy, m) => setW(S.w + (dy || dx) * 0.05 * m)
+    });
+  }
+
+  const lineAt = (el, w, b) => setA(el, { x1: p.sx(DX[0]), y1: p.sy(w * DX[0] + b), x2: p.sx(DX[1]), y2: p.sy(w * DX[1] + b) });
+  p.draw = () => {
+    const P = opt.params ? opt.params() : S, w = P.w, b = P.b, I = p.inner;
+    lineAt(line, w, b);
+    if (showBest) { const st = stats(); lineAt(best, st.w, st.b); best.style.display = ''; } else best.style.display = 'none';
+    S.data.forEach((d, i) => {
+      const X = p.sx(d.x), Y = p.sy(d.y), Yh = p.sy(w * d.x + b), r = res[i];
+      r.ln.style.display = mode === 'lines' ? '' : 'none';
+      r.sq.style.display = mode === 'squares' ? '' : 'none';
+      if (mode === 'lines') setA(r.ln, { x1: X, x2: X, y1: Y, y2: Yh });
+      if (mode === 'squares') {
+        const s = Math.min(Math.abs(Yh - Y), 4000), left = X + s > I.x + I.w ? X - s : X;
+        setA(r.sq, { x: left, y: Math.min(Y, Yh), width: s, height: s });
+      }
+      pts[i].setAttribute('transform', `translate(${X.toFixed(1)},${Y.toFixed(1)})`);
+      pts[i].classList.toggle('hl', i === hl);
+    });
+    if (tri) {
+      const X0 = p.sx(0), X1 = p.sx(1), Y0 = p.sy(b), Y1 = p.sy(b + w);
+      tri.setAttribute('d', `M${X0},${Y0}H${X1}V${Y1}`);
+      setA(triRun, { x: (X0 + X1) / 2, y: Y0 + (w >= 0 ? 16 : -8) });
+      setA(triRise, { x: X1 + 6, y: (Y0 + Y1) / 2 + 5 });
+      triRise.style.display = Math.abs(Y1 - Y0) > 18 ? '' : 'none';
+    }
+    if (hB) {
+      hB.setAttribute('transform', `translate(${p.sx(0)},${p.sy(b)})`);
+      const hx = frozenX ?? handleX();
+      hW.setAttribute('transform', `translate(${p.sx(hx)},${p.sy(w * hx + b)})`);
+      hB.setAttribute('aria-valuenow', fmt(b));
+      hW.setAttribute('aria-valuenow', fmt(w));
+    }
+  };
+  if (!opt.params) on(() => p.redraw());
+  return {
+    plot: p,
+    setMode(m) { mode = m; p.redraw(); },
+    setHL(i) { hl = i; p.redraw(); },
+    setBest(v) { showBest = v; p.redraw(); }
+  };
+}
+
+/* ================= loss map (heatmap + contours) ================= */
+function LossMap(host, opt) {
+  const p = new Plot(host, { x: WD, y: BD, equal: true, canvas: true, xLabel: 'w', yLabel: 'b', label: opt.label, m: { t: 10, r: 12, b: 26, l: 34 } });
+  p.svg.classList.add('map');
+  const gC = p.layer('contours'), gG = p.layer('guides'), gP = p.layer('path'), gA = p.layer('arrow'), gO = p.layer('opt');
+  const hGuide = svg('line', { class: 'guide' }, gG), vGuide = svg('line', { class: 'guide' }, gG);
+  const hLab = svg('text', { class: 'guide-label', 'text-anchor': 'end' }, gG), vLab = svg('text', { class: 'guide-label' }, gG);
+  hLab.textContent = 'b held still';
+  vLab.textContent = 'w held still';
+  const pathLine = svg('polyline', { class: 'gd-path' }, gP), pathDots = svg('g', {}, gP);
+  const arrow = svg('path', { class: 'grad-arrow' }, gA), arrowLab = svg('text', { class: 'arrow-label' }, gA);
+  arrowLab.textContent = '−∇L';
+  const optMark = svg('path', { class: 'opt-mark' }, gO);
+  const H = handle(p.gTop, null, 'Your w and b. Arrow keys move them.', true);
+  H.setAttribute('tabindex', '0');
+  H.style.touchAction = 'none';
+  let heatKey = '', contourKey = '', path = null;
+  if (!opt.guides) { hGuide.style.display = vGuide.style.display = hLab.style.display = vLab.style.display = 'none'; }
+  if (!opt.arrow) { arrow.style.display = arrowLab.style.display = 'none'; }
+
+  const set = (w, b) => opt.onSet(round(clamp(w, WD[0], WD[1])), round(clamp(b, BD[0], BD[1])));
+  let dragId = null, tap = null;
+  p.svg.addEventListener('pointerdown', e => {
+    const onHandle = H.contains(e.target);
+    if (e.pointerType === 'touch' && !onHandle) { tap = { id: e.pointerId, x: e.clientX, y: e.clientY }; return; }
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    e.preventDefault();
+    dragId = e.pointerId;
+    try { p.svg.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+    p.hideTip();
+    const d = p.toData(e);
+    set(d.x, d.y);
+  });
+  p.svg.addEventListener('pointermove', e => {
+    const d = p.toData(e);
+    if (dragId === e.pointerId) { set(d.x, d.y); return; }
+    if (e.pointerType === 'mouse') {
+      if (p.inside(d.px, d.py)) p.showTip(d.px, d.py, `<var>w</var> = ${fmt(d.x)}, <var>b</var> = ${fmt(d.y)}<br>loss ${fmt(lossAt(d.x, d.y), 3)}`);
+      else p.hideTip();
+    }
+  });
+  const end = e => {
+    if (dragId === e.pointerId) dragId = null;
+    if (tap && tap.id === e.pointerId) {
+      if (e.type === 'pointerup' && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) < 10) { const d = p.toData(e); set(d.x, d.y); }
+      tap = null;
+    }
+  };
+  p.svg.addEventListener('pointerup', end);
+  p.svg.addEventListener('pointercancel', end);
+  p.svg.addEventListener('pointerleave', () => p.hideTip());
+  H.addEventListener('keydown', e => {
+    const k = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[e.key];
+    if (!k) return;
+    e.preventDefault();
+    const m = e.shiftKey ? 0.25 : 0.05;
+    set(S.w + k[0] * m, S.b + k[1] * m);
+  });
+
+  function corners() { return Math.max(lossAt(WD[0], BD[0]), lossAt(WD[0], BD[1]), lossAt(WD[1], BD[0]), lossAt(WD[1], BD[1])); }
+  function drawHeat(st) {
+    const key = `${S.dataV}|${S.themeV}|${p.layoutV}`;
+    if (key === heatKey) return;
+    heatKey = key;
+    const cols = Math.max(2, Math.round(p.inner.w / 4)), rows = Math.max(2, Math.round(p.inner.h / 4));
+    const off = document.createElement('canvas');
+    off.width = cols;
+    off.height = rows;
+    const octx = off.getContext('2d'), img = octx.createImageData(cols, rows);
+    const c0 = hexRGB(cssVar('--surface') || '#ffffff'), c1 = hexRGB(cssVar('--err') || '#c96f00');
+    const s = 0.5, den = Math.log(1 + Math.max(1e-6, corners() - st.Lmin) / s);
+    for (let j = 0; j < rows; j++) {
+      const b = lerp(BD[1], BD[0], (j + 0.5) / rows);
+      for (let i = 0; i < cols; i++) {
+        const w = lerp(WD[0], WD[1], (i + 0.5) / cols);
+        const t = clamp(Math.log(1 + Math.max(0, lossAt(w, b) - st.Lmin) / s) / den, 0, 1);
+        const a = 0.04 + 0.78 * t, o = (j * cols + i) * 4;
+        img.data[o] = c0[0] + (c1[0] - c0[0]) * a;
+        img.data[o + 1] = c0[1] + (c1[1] - c0[1]) * a;
+        img.data[o + 2] = c0[2] + (c1[2] - c0[2]) * a;
+        img.data[o + 3] = 255;
+      }
+    }
+    octx.putImageData(img, 0, 0);
+    const ctx = p.ctx;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.clearRect(0, 0, p.canvas.width, p.canvas.height);
+    ctx.drawImage(off, 0, 0, p.canvas.width, p.canvas.height);
+  }
+  function drawContours(st) {
+    const key = `${S.dataV}|${p.layoutV}`;
+    if (key === contourKey) return;
+    contourKey = key;
+    gC.textContent = '';
+    const top = corners();
+    for (let k = 0.125; st.Lmin + k < top * 1.3 && k < 1e5; k *= 2) {
+      let d = '';
+      for (let i = 0; i <= 120; i++) {
+        const t = i / 120 * 2 * Math.PI;
+        const r1 = Math.sqrt(k / st.l1) * Math.cos(t), r2 = Math.sqrt(k / st.l2) * Math.sin(t);
+        const w = st.w + r1 * st.v1[0] + r2 * st.v2[0], b = st.b + r1 * st.v1[1] + r2 * st.v2[1];
+        d += (i ? 'L' : 'M') + clamp(p.sx(w), -1e4, 1e4).toFixed(1) + ',' + clamp(p.sy(b), -1e4, 1e4).toFixed(1);
+      }
+      svg('path', { d: d + 'Z', class: 'contour' }, gC);
+    }
+  }
+  p.draw = () => {
+    const st = stats(), I = p.inner;
+    drawHeat(st);
+    drawContours(st);
+    const ox = p.sx(st.w), oy = p.sy(st.b);
+    optMark.setAttribute('d', `M${ox - 5},${oy - 5}L${ox + 5},${oy + 5}M${ox - 5},${oy + 5}L${ox + 5},${oy - 5}`);
+    const X = p.sx(S.w), Y = p.sy(S.b);
+    H.style.display = p.inside(X, Y) ? '' : 'none';
+    H.setAttribute('transform', `translate(${X.toFixed(1)},${Y.toFixed(1)})`);
+    H.setAttribute('aria-valuetext', `w ${fmt(S.w)}, b ${fmt(S.b)}`);
+    if (opt.guides) {
+      setA(hGuide, { x1: I.x, x2: I.x + I.w, y1: Y, y2: Y });
+      setA(vGuide, { x1: X, x2: X, y1: I.y, y2: I.y + I.h });
+      setA(hLab, { x: I.x + I.w - 6, y: Y - 6 });
+      setA(vLab, { x: X + 6, y: I.y + 36 });
+    }
+    if (opt.arrow) {
+      const [gw, gb] = gradAt(S.w, S.b), g = Math.hypot(gw, gb), len = 110 * (1 - Math.exp(-g / 5));
+      if (len > 9) {
+        const ux = -gw / g, uy = gb / g;   // pixel direction of −∇L (y axis points down)
+        const x2 = X + ux * len, y2 = Y + uy * len, hx = ux * 10, hy = uy * 10, nx = -uy * 5.5, ny = ux * 5.5;
+        arrow.setAttribute('d', `M${X},${Y}L${x2 - hx},${y2 - hy}M${x2},${y2}L${x2 - hx + nx},${y2 - hy + ny}L${x2 - hx - nx},${y2 - hy - ny}Z`);
+        setA(arrowLab, { x: x2 + ux * 10 - 10, y: y2 + uy * 12 + 5 });
+        arrow.style.display = arrowLab.style.display = '';
+      } else arrow.style.display = arrowLab.style.display = 'none';
+    }
+    if (path) {
+      const step = Math.max(1, Math.ceil(path.length / 160));
+      pathLine.setAttribute('points', path.map(q => `${clamp(p.sx(q.w), -1e4, 1e4).toFixed(1)},${clamp(p.sy(q.b), -1e4, 1e4).toFixed(1)}`).join(' '));
+      pathDots.textContent = '';
+      for (let i = 0; i < path.length - 1; i += step) svg('circle', { cx: p.sx(path[i].w), cy: p.sy(path[i].b), r: 2.6, class: 'gd-dot' }, pathDots);
+    }
+  };
+  return { plot: p, redraw: () => p.redraw(), setPath(pt) { path = pt; } };
+}
+
+function SlicePlot(host, which) {
+  const dom = which === 'w' ? WD : BD;
+  const p = new Plot(host, { x: dom, y: [0, 10], xLabel: which, yLabel: 'L', aspect: 0.46, minH: 150, maxH: 210, label: which === 'w' ? 'Loss along w with b held still' : 'Loss along b with w held still' });
+  const curve = svg('path', { class: 'curve-err' }, p.layer('c')), tan = svg('line', { class: 'tangent' }, p.layer('t'));
+  const H = handle(p.gTop, null, which === 'w' ? 'Move w along the slice' : 'Move b along the slice', true);
+  const Lf = v => (which === 'w' ? lossAt(v, S.b) : lossAt(S.w, v));
+  const setV = v => (which === 'w' ? setW(v) : setB(v));
+  drag(H, { move: e => setV(p.toData(e).x), key: (dx, dy, m) => setV((which === 'w' ? S.w : S.b) + (dx || dy) * 0.05 * m) });
+  p.draw = () => {
+    curve.setAttribute('d', curveD(p, Lf, dom[0], dom[1], 120));
+    const v = which === 'w' ? S.w : S.b, Lv = Lf(v), g = gradAt(S.w, S.b)[which === 'w' ? 0 : 1];
+    tangentSeg(p, tan, v, Lv, g, 56);
+    H.setAttribute('transform', `translate(${p.sx(v).toFixed(1)},${p.sy(Lv).toFixed(1)})`);
+  };
+  return { render() { if (!p.setDomain(null, [0, niceCeil(Math.max(Lf(dom[0]), Lf(dom[1])) * 1.05)])) p.redraw(); } };
+}
+
+/* ================= top bar ================= */
+(function bar() {
+  const eq = $('#bar-eq'), loss = $('#bar-loss'), pill = $('#bar-pill');
+  on(() => {
+    const L = lossAt(S.w, S.b), st = stats();
+    eq.innerHTML = eqHTML(S.w, S.b);
+    loss.textContent = fmt(L, L < 100 ? 3 : 1);
+    const r = L / Math.max(st.Lmin, 1e-9);
+    if (L <= st.Lmin + 0.004) { pill.className = 'pill good'; pill.textContent = 'best fit'; }
+    else if (r < 1.6) { pill.className = 'pill good'; pill.textContent = 'close'; }
+    else if (r < 6) { pill.className = 'pill warn'; pill.textContent = 'getting there'; }
+    else { pill.className = 'pill bad'; pill.textContent = 'far off'; }
+  });
+  const label = $('#bar-section'), links = $$('.toc a');
+  const io = new IntersectionObserver(entries => {
+    for (const en of entries) {
+      if (!en.isIntersecting) continue;
+      label.textContent = en.target.dataset.title;
+      links.forEach(a => a.classList.toggle('current', a.getAttribute('href') === '#' + en.target.id));
+    }
+  }, { rootMargin: '-35% 0px -60% 0px' });
+  $$('[data-title]').forEach(s => io.observe(s));
+})();
+
+/* ================= hero ================= */
+(function hero() {
+  const host = $('#hero-plot');
+  const D = DATA0.map(([x, y]) => ({ x, y }));
+  const p = new Plot(host, { x: DX, y: DY, xLabel: 'x', yLabel: 'y', aspect: 0.7, minH: 230, maxH: 360, label: 'Animation: a line fitting itself to six points by gradient descent' });
+  const res = D.map(() => svg('line', { class: 'res-line' }, p.layer('res')));
+  const ln = svg('line', { class: 'model-line' }, p.layer('line'));
+  const dots = D.map(() => svg('circle', { r: 5.5, class: 'pt-dot' }, p.gTop));
+  const badge = document.createElement('div');
+  badge.className = 'plot-badge';
+  host.appendChild(badge);
+  const A = { w: -1, b: 4.6 }, ETA = 0.12, STEPS = 40;
+  let w = A.w, b = A.b, k = 0;
+  const stepOnce = () => { const [gw, gb] = gradAt(w, b, D); w -= ETA * gw; b -= ETA * gb; k++; };
+  p.draw = () => {
+    setA(ln, { x1: p.sx(DX[0]), y1: p.sy(w * DX[0] + b), x2: p.sx(DX[1]), y2: p.sy(w * DX[1] + b) });
+    D.forEach((d, i) => {
+      setA(res[i], { x1: p.sx(d.x), x2: p.sx(d.x), y1: p.sy(d.y), y2: p.sy(w * d.x + b) });
+      setA(dots[i], { cx: p.sx(d.x), cy: p.sy(d.y) });
+    });
+    badge.textContent = `step ${k} · loss ${fmt(lossAt(w, b, D), 3)}`;
+  };
+  if (RM.matches) { while (k < STEPS) stepOnce(); p.redraw(); return; }
+  p.redraw();
+  let visible = true, raf = 0, last = 0, hold = 0;
+  const tick = t => {
+    raf = 0;
+    if (!visible || RM.matches) return;
+    if (!last) last = t;
+    if (k < STEPS) {
+      if (t - last > 90) { last = t; stepOnce(); p.redraw(); }
+    } else if (!hold) hold = t;
+    else if (t - hold > 2200) { w = A.w; b = A.b; k = 0; hold = 0; last = t; p.redraw(); }
+    raf = requestAnimationFrame(tick);
+  };
+  new IntersectionObserver(([en]) => { visible = en.isIntersecting; if (visible && !raf) { last = 0; raf = requestAnimationFrame(tick); } }).observe(host);
+  setTimeout(() => { if (!raf && visible) raf = requestAnimationFrame(tick); }, 700);
+})();
+
+/* ================= part 1: fit by eye ================= */
+(function part1() {
+  DataPlot($('#s1-plot'), { dragPoints: true, handles: true, triangle: true, label: 'Six data points and a line you can drag' });
+  bindRange('s1-w', () => S.w, setW);
+  bindRange('s1-b', () => S.b, setB);
+  $('#s1-reset-line').addEventListener('click', () => update({ w: START.w, b: START.b }));
+  $('#s1-reset-pts').addEventListener('click', () => { S.data.forEach((d, i) => { d.x = DATA0[i][0]; d.y = DATA0[i][1]; }); dataChanged(); });
+  const goal = $('#s1-goal');
+  on(() => {
+    const L = lossAt(S.w, S.b), st = stats(), target = Math.max(0.05, round(st.Lmin * 1.35 + 0.02));
+    goal.innerHTML = L <= target
+      ? `<b>Goal met.</b> Your loss is ${fmt(L, 3)}, close to the best possible ${fmt(st.Lmin, 3)}. You don’t know what “loss” means yet; part 2 explains it.`
+      : `<b>Goal:</b> get the loss in the top bar under ${fmt(target)}. It is ${fmt(L, 3)} now. The best possible line scores ${fmt(st.Lmin, 3)}.`;
+  });
+})();
+
+/* ================= part 2: loss ================= */
+(function part2() {
+  let rows = [];
+  const setHL = i => { dp.setHL(i); rows.forEach((r, j) => r.classList.toggle('hl', j === i)); };
+  const dp = DataPlot($('#s2-plot'), { residuals: 'squares', onHover: i => setHL(i), label: 'Errors drawn as squares whose area is the squared error' });
+  bindRange('s2-w', () => S.w, setW);
+  bindRange('s2-b', () => S.b, setB);
+  segmented($('#s2-mode'), v => dp.setMode(v));
+  $('#s2-best').addEventListener('change', e => dp.setBest(e.target.checked));
+  const tbody = $('#s2-table tbody'), mean = $('#s2-mean');
+  rows = S.data.map((_, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td></td><td></td><td></td><td></td><td></td><td></td>';
+    tr.addEventListener('pointerenter', () => setHL(i));
+    tr.addEventListener('pointerleave', () => setHL(-1));
+    tbody.appendChild(tr);
+    return tr;
+  });
+  on(() => {
+    const es = S.data.map(d => S.w * d.x + S.b - d.y), mx = Math.max(1e-9, ...es.map(e => e * e));
+    rows.forEach((tr, i) => {
+      const d = S.data[i], e = es[i], c = tr.children;
+      c[0].textContent = i + 1;
+      c[1].textContent = fmt(d.x);
+      c[2].textContent = fmt(d.y);
+      c[3].textContent = fmt(S.w * d.x + S.b);
+      c[4].textContent = fmt(e);
+      c[5].innerHTML = `<span class="minibar"><i style="width:${(e * e / mx * 100).toFixed(1)}%"></i></span>${fmt(e * e)}`;
+    });
+    mean.textContent = fmt(lossAt(S.w, S.b), 3);
+  });
+})();
+
+/* ================= part 3: derivative ================= */
+(function part3() {
+  const p = new Plot($('#s3-plot'), { x: WD, y: [0, 50], xLabel: 'w', yLabel: 'L(w)', aspect: 0.66, minH: 250, maxH: 400, label: 'Loss as a function of w, with a secant and a tangent line' });
+  const gDrop = p.layer('drop'), gCurve = p.layer('curve'), gSec = p.layer('sec'), gTri = p.layer('tri'), gTan = p.layer('tan');
+  const drop = svg('line', { class: 'guide' }, gDrop);
+  const curve = svg('path', { class: 'curve-err' }, gCurve);
+  const sec = svg('line', { class: 'secant' }, gSec);
+  const tri = svg('path', { class: 'tri' }, gTri);
+  const tH = svg('text', { class: 'tri-label', 'text-anchor': 'middle' }, gTri), tL = svg('text', { class: 'tri-label' }, gTri);
+  tH.textContent = 'h';
+  tL.textContent = 'ΔL';
+  const tan = svg('line', { class: 'tangent' }, gTan);
+  const q = svg('circle', { r: 4.5, class: 'q-dot' }, p.gTop);
+  const P = handle(p.gTop, null, 'Weight w on the loss curve. Left and right arrows move it.', true);
+  drag(P, { move: e => setW(p.toData(e).x), key: (dx, dy, m) => setW(S.w + (dx || dy) * 0.05 * m) });
+  bindRange('s3-w', () => S.w, setW);
+  bindRange('s3-b', () => S.b, setB);
+  const hIn = $('#s3-h'), hOut = $('#s3-h-out');
+  const hOf = v => 2 * 10 ** (-3.3 * v / 100);
+  const fmtH = h => (h >= 0.1 ? h.toFixed(2) : h >= 0.01 ? h.toFixed(3) : h.toFixed(4));
+  let hv = 0, anim = 0;
+  hIn.addEventListener('input', () => { hv = Number(hIn.value); cancelAnimationFrame(anim); render(); });
+  $('#s3-anim').addEventListener('click', () => {
+    cancelAnimationFrame(anim);
+    if (RM.matches) { hv = 100; render(); return; }
+    const t0 = performance.now(), from = hv >= 99 ? 0 : hv;
+    const go = t => {
+      const u = clamp((t - t0) / 2600, 0, 1), e = u < 0.5 ? 2 * u * u : 1 - (-2 * u + 2) ** 2 / 2;
+      hv = lerp(from, 100, e);
+      render();
+      if (u < 1) anim = requestAnimationFrame(go);
+    };
+    anim = requestAnimationFrame(go);
+  });
+  p.draw = () => {
+    const b = S.b, w = S.w, h = hOf(hv), I = p.inner;
+    curve.setAttribute('d', curveD(p, v => lossAt(v, b), WD[0], WD[1]));
+    const L0 = lossAt(w, b), L1 = lossAt(w + h, b), ms = (L1 - L0) / h, mt = gradAt(w, b)[0];
+    const X = p.sx(w), Y = p.sy(L0), Xq = p.sx(w + h), Yq = p.sy(L1);
+    setA(sec, { x1: p.sx(WD[0]), y1: p.sy(L0 + ms * (WD[0] - w)), x2: p.sx(WD[1]), y2: p.sy(L0 + ms * (WD[1] - w)) });
+    tangentSeg(p, tan, w, L0, mt, 90);
+    tri.setAttribute('d', `M${X},${Y}H${Xq}V${Yq}`);
+    setA(tH, { x: (X + Xq) / 2, y: Y + (Yq < Y ? 16 : -8) });
+    setA(tL, { x: Xq + 6, y: (Y + Yq) / 2 + 5 });
+    tH.style.display = Math.abs(Xq - X) > 16 ? '' : 'none';
+    tL.style.display = Math.abs(Yq - Y) > 18 ? '' : 'none';
+    setA(q, { cx: Xq, cy: Yq });
+    setA(drop, { x1: X, x2: X, y1: Y, y2: I.y + I.h });
+    P.setAttribute('transform', `translate(${X.toFixed(1)},${Y.toFixed(1)})`);
+  };
+  const say = $('#s3-say'), oSec = $('#s3-sec'), oDer = $('#s3-der'), oGap = $('#s3-gap');
+  function render() {
+    const b = S.b, top = Math.max(lossAt(WD[0], b), lossAt(WD[1], b));
+    if (!p.setDomain(null, [0, niceCeil(top * 1.04)])) p.redraw();
+    const h = hOf(hv), w = S.w, ms = (lossAt(w + h, b) - lossAt(w, b)) / h, mt = gradAt(w, b)[0];
+    hIn.value = hv;
+    hOut.textContent = fmtH(h);
+    oSec.textContent = fmt(ms, 3);
+    oDer.textContent = fmt(mt, 3);
+    oGap.textContent = fmt(Math.abs(ms - mt), Math.abs(ms - mt) < 0.01 ? 4 : 3);
+    if (Math.abs(mt) < 0.05) say.innerHTML = `At <span class="m"><var>w</var> = ${fmt(w)}</span> the curve is flat. This is the best <var>w</var> for <span class="m"><var>b</var> = ${fmt(b)}</span>.`;
+    else if (mt > 0) say.innerHTML = `At <span class="m"><var>w</var> = ${fmt(w)}</span> the slope is <b>${fmt(mt)}</b>. Raising <var>w</var> would raise the loss, so training will <b>lower</b> <var>w</var>.`;
+    else say.innerHTML = `At <span class="m"><var>w</var> = ${fmt(w)}</span> the slope is <b>${fmt(mt)}</b>. Raising <var>w</var> lowers the loss, so training will <b>raise</b> <var>w</var>.`;
+  }
+  on(render);
+})();
+
+/* ================= part 4: derivative rules ================= */
+(function part4() {
+  const F = {
+    sq: { f: x => x * x, d: x => 2 * x, x: [-3, 3], y: [-1, 9], dy: [-6, 6], fh: '<var>x</var><sup>2</sup>', dh: '2<var>x</var>', rule: 'Power rule with <var>n</var> = 2: bring the 2 down in front and lower the power by one.' },
+    cube: { f: x => x ** 3, d: x => 3 * x * x, x: [-2, 2], y: [-8, 8], dy: [-1, 12], fh: '<var>x</var><sup>3</sup>', dh: '3<var>x</var><sup>2</sup>', rule: 'Power rule with <var>n</var> = 3. The slope is never negative, so this curve never goes down.' },
+    lin: { f: x => 3 * x + 1, d: () => 3, x: [-3, 3], y: [-8, 10], dy: [-1, 5], fh: '3<var>x</var> + 1', dh: '3', rule: 'A line has the same slope everywhere. The +1 shifts the line up but has slope 0, by the constant rule.' },
+    err: { f: x => (x - 2) ** 2, d: x => 2 * (x - 2), x: [-1, 5], y: [-1, 9], dy: [-6, 6], fh: '(<var>x</var> − 2)<sup>2</sup>', dh: '2(<var>x</var> − 2)', rule: 'A squared error with target 2. Its slope is twice the error, and it is zero exactly at the target.' }
+  };
+  let k = 'sq', x0 = 1.2;
+  const top = new Plot($('#s4-f'), { x: F.sq.x, y: F.sq.y, xLabel: 'x', yLabel: 'f(x)', aspect: 0.5, minH: 190, maxH: 270, label: 'The chosen function with its tangent line' });
+  const bot = new Plot($('#s4-d'), { x: F.sq.x, y: F.sq.dy, xLabel: 'x', yLabel: 'f′(x)', aspect: 0.4, minH: 160, maxH: 220, label: 'The derivative of the chosen function' });
+  const vT = svg('line', { class: 'guide' }, top.layer('g')), fC = svg('path', { class: 'curve-ink' }, top.layer('c')), tan = svg('line', { class: 'tangent' }, top.layer('t'));
+  const fP = svg('circle', { r: 6, class: 'pt-dot' }, top.gTop);
+  const vB = svg('line', { class: 'guide' }, bot.layer('g')), hB = svg('line', { class: 'guide' }, bot.layer('g')), dC = svg('path', { class: 'curve-grad' }, bot.layer('c'));
+  const dP = svg('circle', { r: 6, class: 'grad-dot' }, bot.gTop);
+  const xIn = $('#s4-x'), xOut = $('#s4-x-out'), read = $('#s4-read'), rule = $('#s4-rule'), formula = $('#s4-formula');
+  top.draw = () => {
+    const f = F[k], y0 = f.f(x0), I = top.inner;
+    fC.setAttribute('d', curveD(top, f.f, f.x[0], f.x[1]));
+    tangentSeg(top, tan, x0, y0, f.d(x0), 80);
+    setA(vT, { x1: top.sx(x0), x2: top.sx(x0), y1: I.y, y2: I.y + I.h });
+    setA(fP, { cx: top.sx(x0), cy: top.sy(y0) });
+  };
+  bot.draw = () => {
+    const f = F[k], d0 = f.d(x0), I = bot.inner;
+    dC.setAttribute('d', curveD(bot, f.d, f.x[0], f.x[1]));
+    setA(vB, { x1: bot.sx(x0), x2: bot.sx(x0), y1: I.y, y2: I.y + I.h });
+    setA(hB, { x1: I.x, x2: bot.sx(x0), y1: bot.sy(d0), y2: bot.sy(d0) });
+    setA(dP, { cx: bot.sx(x0), cy: bot.sy(d0) });
+  };
+  function render() {
+    const f = F[k], m = f.d(x0);
+    top.redraw();
+    bot.redraw();
+    xIn.value = x0;
+    xOut.textContent = fmt(x0);
+    read.innerHTML = `At <span class="m"><var>x</var> = ${fmt(x0)}</span> the tangent to <var>f</var> has slope <b>${fmt(m)}</b>, and the lower curve has height <span class="m"><var>f</var>′(${fmt(x0)})</span> = <b>${fmt(m)}</b>. The derivative records the slope at every <var>x</var>.`;
+  }
+  function choose(key) {
+    k = key;
+    const f = F[k];
+    x0 = clamp(x0, f.x[0], f.x[1]);
+    xIn.min = f.x[0];
+    xIn.max = f.x[1];
+    top.setDomain(f.x, f.y);
+    bot.setDomain(f.x, f.dy);
+    formula.innerHTML = `<var>f</var>(<var>x</var>) = ${f.fh}<span class="gap"></span><var>f</var>′(<var>x</var>) = <span class="c-grad">${f.dh}</span>`;
+    rule.innerHTML = f.rule;
+    render();
+  }
+  segmented($('#s4-fn'), choose);
+  xIn.addEventListener('input', () => { x0 = Number(xIn.value); render(); });
+  for (const pl of [top, bot]) {
+    pl.svg.classList.add('scrub');
+    let active = null;
+    const setX = e => { x0 = round(clamp(pl.toData(e).x, F[k].x[0], F[k].x[1])); render(); };
+    pl.svg.addEventListener('pointerdown', e => { active = e.pointerId; try { pl.svg.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ } setX(e); });
+    pl.svg.addEventListener('pointermove', e => { if (active === e.pointerId || e.pointerType === 'mouse') setX(e); });
+    const end = e => { if (active === e.pointerId) active = null; };
+    pl.svg.addEventListener('pointerup', end);
+    pl.svg.addEventListener('pointercancel', end);
+  }
+  choose('sq');
+})();
+
+/* ================= part 5: chain rule ================= */
+(function part5() {
+  const host = $('#s5-graph');
+  const gs = svg('svg', { class: 'graph', role: 'img', 'aria-label': 'Computation graph: x times w gives z, plus b gives y-hat, minus y gives e, squared gives the loss L' }, host);
+  const MID = 'cg' + (++uid);
+  let idx = 3, step = 0, play = 0;
+  const NODES = [
+    { id: 'x', col: 0, lane: 'main', kind: 'in', name: 'x', key: 'x' },
+    { id: 'w', col: 1, lane: 'side', kind: 'param', name: 'w', key: 'w' },
+    { id: 'mul', col: 1, lane: 'main', kind: 'op', sym: '×' },
+    { id: 'b', col: 2, lane: 'side', kind: 'param', name: 'b', key: 'b' },
+    { id: 'add', col: 2, lane: 'main', kind: 'op', sym: '+' },
+    { id: 'y', col: 3, lane: 'side', kind: 'in', name: 'y', key: 'y' },
+    { id: 'sub', col: 3, lane: 'main', kind: 'op', sym: '−' },
+    { id: 'sq', col: 4, lane: 'main', kind: 'op', sym: '(·)²' },
+    { id: 'L', col: 5, lane: 'main', kind: 'out', name: 'L', key: 'L' }
+  ];
+  const NODE = Object.fromEntries(NODES.map(n => [n.id, n]));
+  const EDGES = [
+    { from: 'x', to: 'mul', val: 'x' },
+    { from: 'w', to: 'mul', val: 'w' },
+    { from: 'mul', to: 'add', val: 'z', label: 'z' },
+    { from: 'b', to: 'add', val: 'b' },
+    { from: 'add', to: 'sub', val: 'yh', label: 'ŷ' },
+    { from: 'y', to: 'sub', val: 'y' },
+    { from: 'sub', to: 'sq', val: 'e', label: 'e' },
+    { from: 'sq', to: 'L', val: 'L' }
+  ];
+  const AT = { L: 1, e: 2, yh: 3, z: 4, b: 4, w: 5 };
+  const ACTIVE = { 1: 'L', 2: 'sq', 3: 'sub', 4: 'add', 5: 'mul' };
+  function vals() {
+    const p = S.data[idx], x = p.x, y = p.y, w = S.w, b = S.b;
+    const z = w * x, yh = z + b, e = yh - y, L = e * e, ge = 2 * e;
+    return { x, y, w, b, z, yh, e, L, g: { L: 1, e: ge, yh: ge, z: ge, b: ge, w: ge * x } };
+  }
+  const NAMES = { z: 'z', yh: 'ŷ', e: 'e', L: 'L', w: 'w', b: 'b' };
+  function chip(parent, x, y, html, anchor = 'middle') {
+    const t = svg('text', { x, y, 'text-anchor': anchor, class: 'chip-text' }, parent);
+    t.innerHTML = html;
+    const bb = t.getBBox();
+    parent.insertBefore(svg('rect', { x: bb.x - 6, y: bb.y - 3, width: bb.width + 12, height: bb.height + 6, rx: 7, class: 'chip-bg' }), t);
+  }
+  const gLabel = (key, v) => `∂<tspan class="v">L</tspan>/∂<tspan class="v">${NAMES[key]}</tspan> = ${fmt(v)}`;
+  function draw() {
+    const W = Math.floor(host.clientWidth);
+    if (!W) return;
+    const vert = W < 720, v = vals(), rowH = 80, H = vert ? 40 + rowH * 5 + 52 : 262;
+    setA(gs, { width: W, height: H, viewBox: `0 0 ${W} ${H}` });
+    gs.textContent = '';
+    const defs = svg('defs', {}, gs);
+    for (const [id, cls] of [['a', 'arrow-fill'], ['g', 'arrow-fill-g']]) {
+      const m = svg('marker', { id: MID + id, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 6.5, markerHeight: 6.5, orient: 'auto' }, defs);
+      svg('path', { d: 'M0,0L10,5L0,10z', class: cls }, m);
+    }
+    const gE = svg('g', {}, gs), gL = svg('g', {}, gs), gN = svg('g', {}, gs), gC = svg('g', {}, gs);
+    const pad = 62, dx = (W - 2 * pad) / 5, mainX = Math.min(W * 0.56, W - 140), sideX = 60, mainY = 186, sideY = 52;
+    const P = {};
+    for (const n of NODES) P[n.id] = vert ? { X: n.lane === 'main' ? mainX : sideX, Y: 40 + n.col * rowH } : { X: pad + n.col * dx, Y: n.lane === 'main' ? mainY : sideY };
+    const act = ACTIVE[step];
+    for (const n of NODES) {
+      const { X, Y } = P[n.id];
+      if (n.kind === 'op') {
+        svg('circle', { cx: X, cy: Y, r: 21, class: 'op' + (act === n.id ? ' active' : '') }, gN);
+        svg('text', { x: X, y: Y + 6, 'text-anchor': 'middle', class: 'op-sym' }, gN).textContent = n.sym;
+        n.size = { r: 21 };
+      } else {
+        const t = svg('text', { x: X, y: Y + 5, 'text-anchor': 'middle', class: 'node-text' }, gN);
+        t.innerHTML = `<tspan class="v">${n.name}</tspan> = ${fmt(v[n.key], n.id === 'L' ? 3 : 2)}`;
+        const bw = Math.max(70, t.getBBox().width + 24), bh = 34;
+        gN.insertBefore(svg('rect', { x: X - bw / 2, y: Y - bh / 2, width: bw, height: bh, rx: 17, class: 'pill-bg' + (n.kind === 'param' ? ' param' : '') + (act === n.id ? ' active' : '') }), t);
+        n.size = { hw: bw / 2, hh: bh / 2 };
+      }
+    }
+    const cut = (n, ux, uy) => {
+      if (n.size.r) return n.size.r;
+      const tx = Math.abs(ux) > 1e-6 ? n.size.hw / Math.abs(ux) : Infinity, ty = Math.abs(uy) > 1e-6 ? n.size.hh / Math.abs(uy) : Infinity;
+      return Math.min(tx, ty);
+    };
+    for (const ed of EDGES) {
+      const a = P[ed.from], b = P[ed.to];
+      let ux = b.X - a.X, uy = b.Y - a.Y;
+      const len = Math.hypot(ux, uy);
+      ux /= len; uy /= len;
+      const ra = cut(NODE[ed.from], ux, uy), rb = cut(NODE[ed.to], ux, uy) + 2;
+      const at = AT[ed.val], done = at != null && step >= at, flow = at === step;
+      svg('line', { x1: a.X + ux * ra, y1: a.Y + uy * ra, x2: b.X - ux * rb, y2: b.Y - uy * rb, class: 'edge' + (done ? ' done' : '') + (flow ? ' flow' : ''), 'marker-end': `url(#${MID}${done ? 'g' : 'a'})` }, gE);
+      if (ed.label) {
+        const mx = (a.X + b.X) / 2, my = (a.Y + b.Y) / 2;
+        const t = vert ? svg('text', { x: mx + 14, y: my - 1, class: 'fwd' }, gL) : svg('text', { x: mx, y: my - 11, 'text-anchor': 'middle', class: 'fwd' }, gL);
+        t.innerHTML = `<tspan class="v">${ed.label}</tspan> = ${fmt(v[ed.val])}`;
+        if (done) vert ? chip(gC, mx + 14, my + 19, gLabel(ed.val, v.g[ed.val]), 'start') : chip(gC, mx, my + 27, gLabel(ed.val, v.g[ed.val]));
+      }
+    }
+    for (const id of ['w', 'b']) {
+      if (step < AT[id]) continue;
+      const { X, Y } = P[id];
+      vert ? chip(gC, X, Y + 36, gLabel(id, v.g[id])) : chip(gC, X + 10, (sideY + mainY) / 2 + 4, gLabel(id, v.g[id]), 'start');
+    }
+    if (step >= 1) { const { X, Y } = P.L; chip(gC, X, Y + 40, gLabel('L', 1)); }
+  }
+  const panel = $('#s5-panel'), bBack = $('#s5-back'), bNext = $('#s5-next'), bPlay = $('#s5-play'), ptText = $('#s5-pt');
+  function texts(v) {
+    return [
+      `<span class="step-count">Forward pass</span>Values flow left to right: <span class="m"><var>z</var> = <var>w</var>·<var>x</var> = ${fmt(v.z)}</span>, <span class="m"><var>ŷ</var> = <var>z</var> + <var>b</var> = ${fmt(v.yh)}</span>, <span class="m"><var>e</var> = <var>ŷ</var> − <var>y</var> = ${fmt(v.e)}</span>, and <span class="m"><var>L</var> = <var>e</var><sup>2</sup> = ${fmt(v.L, 3)}</span>. Press <b>Next step</b> to send the gradient back.`,
+      `<span class="step-count">Step 1 of 5 · start at the loss</span>Changing <var>L</var> changes <var>L</var> one for one, so ${pd('L', 'L')} = 1. Every gradient that follows is built from this.`,
+      `<span class="step-count">Step 2 of 5 · through the square</span><span class="m"><var>L</var> = <var>e</var><sup>2</sup></span>, and the power rule gives the local slope 2<var>e</var>. So ${pd('L', 'e')} = 2 × ${paren(v.e)} = <b>${fmt(v.g.e)}</b>.`,
+      `<span class="step-count">Step 3 of 5 · through the subtraction</span><span class="m"><var>e</var> = <var>ŷ</var> − <var>y</var></span>, so raising <var>ŷ</var> by 1 raises <var>e</var> by 1. Local slope 1: ${pd('L', 'ŷ')} = ${fmt(v.g.e)} × 1 = <b>${fmt(v.g.yh)}</b>.`,
+      `<span class="step-count">Step 4 of 5 · through the addition</span><span class="m"><var>ŷ</var> = <var>z</var> + <var>b</var></span>. Addition hands the gradient to both inputs unchanged: ${pd('L', 'z')} = <b>${fmt(v.g.z)}</b> and ${pd('L', 'b')} = <b>${fmt(v.g.b)}</b>.`,
+      `<span class="step-count">Step 5 of 5 · through the multiplication</span><span class="m"><var>z</var> = <var>w</var>·<var>x</var></span>, so the local slope with respect to <var>w</var> is <span class="m"><var>x</var> = ${fmt(v.x)}</span>. ${pd('L', 'w')} = ${fmt(v.g.z)} × ${paren(v.x)} = <b>${fmt(v.g.w)}</b>. Done: ${pd('L', 'w')} = 2<var>e</var>·<var>x</var> and ${pd('L', 'b')} = 2<var>e</var>.`
+    ];
+  }
+  function render() {
+    const v = vals();
+    draw();
+    panel.innerHTML = texts(v)[step];
+    bBack.disabled = step === 0;
+    bNext.disabled = step === 5;
+    bPlay.textContent = play ? 'Pause' : 'Play all';
+    ptText.innerHTML = `Point ${idx + 1}: <span class="m"><var>x</var> = ${fmt(v.x)}</span>, <span class="m"><var>y</var> = ${fmt(v.y)}</span>`;
+    nudge(v);
+  }
+  const stopPlay = () => { clearInterval(play); play = 0; };
+  bBack.addEventListener('click', () => { stopPlay(); step = Math.max(0, step - 1); render(); });
+  bNext.addEventListener('click', () => { stopPlay(); step = Math.min(5, step + 1); render(); });
+  $('#s5-reset').addEventListener('click', () => { stopPlay(); step = 0; render(); });
+  bPlay.addEventListener('click', () => {
+    if (play) { stopPlay(); render(); return; }
+    if (step === 5) step = 0;
+    play = setInterval(() => { step++; if (step >= 5) stopPlay(); render(); }, RM.matches ? 600 : 1300);
+    render();
+  });
+  const segEl = $('#s5-points');
+  segEl.innerHTML = S.data.map((_, i) => `<button type="button" data-v="${i}" aria-pressed="${i === idx}">${i + 1}</button>`).join('');
+  segmented(segEl, v => { idx = Number(v); render(); });
+  bindRange('s5-w', () => S.w, setW);
+  bindRange('s5-b', () => S.b, setB);
+  new ResizeObserver(() => draw()).observe(host);
+
+  const dIn = $('#s5-d'), dOut = $('#s5-d-out'), oAct = $('#s5-act'), oPred = $('#s5-pred'), oMiss = $('#s5-miss'), nsay = $('#s5-nsay');
+  const dOf = u => 10 ** lerp(-3, 0, u / 100);
+  function nudge(v) {
+    const D = dOf(Number(dIn.value)), L0 = v.e * v.e, e1 = (v.w + D) * v.x + v.b - v.y, act = e1 * e1 - L0, pred = v.g.w * D;
+    dOut.textContent = D >= 0.1 ? D.toFixed(2) : D >= 0.01 ? D.toFixed(3) : D.toFixed(4);
+    const d = D < 0.01 ? 6 : 4;
+    oAct.textContent = fmt(act, d);
+    oPred.textContent = fmt(pred, d);
+    oMiss.textContent = fmt(act - pred, d);
+    nsay.innerHTML = `The miss is exactly <span class="m"><var>x</var><sup>2</sup>Δ<sup>2</sup></span>, because the loss curves. Shrink Δ by 10 and the miss shrinks by 100. That is what “the derivative is the best straight-line approximation” means in practice.`;
+  }
+  dIn.addEventListener('input', () => nudge(vals()));
+  on(render);
+})();
+
+/* ================= part 6: gradient ================= */
+(function part6() {
+  const map = LossMap($('#s6-map'), { arrow: true, guides: true, label: 'Map of the loss over w and b, with your point and the downhill arrow', onSet: (w, b) => update({ w, b }) });
+  const sw = SlicePlot($('#s6-sw'), 'w'), sb = SlicePlot($('#s6-sb'), 'b');
+  const oW = $('#s6-gw'), oB = $('#s6-gb'), oN = $('#s6-gn'), say = $('#s6-say');
+  on(() => {
+    map.redraw();
+    sw.render();
+    sb.render();
+    const [gw, gb] = gradAt(S.w, S.b), g = Math.hypot(gw, gb);
+    oW.textContent = fmt(gw, 3);
+    oB.textContent = fmt(gb, 3);
+    oN.textContent = fmt(g, 3);
+    say.innerHTML = g < 0.02
+      ? `You are at the bottom of the bowl. Both partial derivatives are about zero, so there is no downhill direction left.`
+      : `<span class="c-grad m">∇<var>L</var></span> = (${fmt(gw)}, ${fmt(gb)}). Downhill means <b>${gw > 0 ? 'lowering' : 'raising'}</b> <var>w</var> and <b>${gb > 0 ? 'lowering' : 'raising'}</b> <var>b</var>, with <var>${Math.abs(gw) > Math.abs(gb) ? 'w' : 'b'}</var> mattering more right now.`;
+  });
+})();
+
+/* ================= part 7: gradient descent ================= */
+(function part7() {
+  let path = [{ w: S.w, b: S.b }], eta = 0.15, running = false, raf = 0, last = 0, status = 'ready', mine = { w: S.w, b: S.b }, dv = S.dataV;
+  const map = LossMap($('#s7-map'), {
+    label: 'Map of the loss with the path gradient descent takes',
+    onSet: (w, b) => { stop(); path = [{ w, b }]; mine = { w, b }; status = 'ready'; map.setPath(path); update({ w, b }); }
+  });
+  map.setPath(path);
+  DataPlot($('#s7-data'), { residuals: 'lines', aspect: 0.6, minH: 180, maxH: 250, label: 'The line at the current step' });
+  const lc = new Plot($('#s7-loss'), { x: [0, 10], y: [0, 10], xLabel: '<tspan class="plain">step</tspan>', yLabel: 'L', aspect: 0.44, minH: 150, maxH: 210, label: 'Loss after each step of gradient descent' });
+  const area = svg('path', { class: 'area-err' }, lc.layer('a')), lline = svg('path', { class: 'curve-err' }, lc.layer('l')), cross = svg('line', { class: 'crosshair' }, lc.layer('x'));
+  const endDot = svg('circle', { r: 4.5, class: 'err-dot' }, lc.gTop), endLab = svg('text', { class: 'end-label', 'text-anchor': 'end' }, lc.gTop), hov = svg('circle', { r: 4.5, class: 'err-dot' }, lc.gTop);
+  cross.style.display = hov.style.display = 'none';
+  const losses = () => path.map(q => lossAt(q.w, q.b));
+  lc.draw = () => {
+    const Ls = losses(), n = Ls.length, I = lc.inner;
+    let d = '';
+    Ls.forEach((L, i) => { d += (i ? 'L' : 'M') + lc.sx(i).toFixed(1) + ',' + clamp(lc.sy(L), -1e4, 1e4).toFixed(1); });
+    lline.setAttribute('d', d);
+    area.setAttribute('d', n > 1 ? `${d}L${lc.sx(n - 1)},${lc.sy(0)}L${lc.sx(0)},${lc.sy(0)}Z` : '');
+    const ex = lc.sx(n - 1), ey = clamp(lc.sy(Ls[n - 1]), I.y, I.y + I.h);
+    setA(endDot, { cx: ex, cy: ey });
+    endLab.textContent = `L = ${fmt(Ls[n - 1], 3)}`;
+    const lx = Math.max(ex - 8, I.x + 70);
+    setA(endLab, { x: lx, y: ey - 12 < I.y + 24 ? ey + 20 : Math.min(ey - 12, I.y + I.h - 26) });
+  };
+  lc.svg.addEventListener('pointermove', e => {
+    const d = lc.toData(e), Ls = losses(), i = clamp(Math.round(d.x), 0, Ls.length - 1);
+    if (!lc.inside(d.px, d.py)) { lc.hideTip(); cross.style.display = hov.style.display = 'none'; return; }
+    const X = lc.sx(i), Y = clamp(lc.sy(Ls[i]), lc.inner.y, lc.inner.y + lc.inner.h);
+    setA(cross, { x1: X, x2: X, y1: lc.inner.y, y2: lc.inner.y + lc.inner.h });
+    setA(hov, { cx: X, cy: Y });
+    cross.style.display = hov.style.display = '';
+    lc.showTip(X, Y, `step ${i} · loss ${fmt(Ls[i], 3)}`);
+  });
+  lc.svg.addEventListener('pointerleave', () => { lc.hideTip(); cross.style.display = hov.style.display = 'none'; });
+
+  const bRun = $('#s7-run'), bStep = $('#s7-step'), pill = $('#s7-status'), upd = $('#s7-update'), note = $('#s7-note');
+  const etaIn = $('#s7-eta'), etaOut = $('#s7-eta-out'), crit = $('#s7-crit'), critL = $('#s7-crit-l');
+  function step() {
+    const [gw, gb] = gradAt(S.w, S.b), w = S.w - eta * gw, b = S.b - eta * gb;
+    path.push({ w, b });
+    mine = { w, b };
+    S.w = w;
+    S.b = b;
+    const L = lossAt(w, b), g = Math.hypot(...gradAt(w, b));
+    if (!Number.isFinite(L) || Math.abs(w) > 60 || Math.abs(b) > 60) { status = 'diverged'; stop(); }
+    else if (g < 2e-3) { status = 'converged'; stop(); }
+    else if (path.length > 500) { status = 'paused'; stop(); }
+    update();
+  }
+  function loop(t) {
+    if (!running) return;
+    if (t - last > 110) { last = t; step(); }
+    if (running) raf = requestAnimationFrame(loop);
+  }
+  function run() {
+    if (running || status === 'diverged') return;
+    running = true;
+    status = 'running';
+    last = 0;
+    raf = requestAnimationFrame(loop);
+    update();
+  }
+  function stop() {
+    running = false;
+    cancelAnimationFrame(raf);
+    if (status === 'running') status = 'paused';
+    update();
+  }
+  function restart(from) {
+    stop();
+    path = [{ w: from.w, b: from.b }];
+    mine = { w: from.w, b: from.b };
+    status = 'ready';
+    map.setPath(path);
+    update({ w: from.w, b: from.b });
+  }
+  bRun.addEventListener('click', () => (running ? stop() : (status === 'converged' ? null : run())));
+  bStep.addEventListener('click', () => { if (status === 'diverged' || status === 'converged') return; stop(); step(); if (status === 'paused' || status === 'running') status = 'paused'; update(); });
+  $('#s7-reset').addEventListener('click', () => restart(path[0]));
+  etaIn.addEventListener('input', () => { eta = Number(etaIn.value); update(); });
+  $$('.chips .chip').forEach(c => c.addEventListener('click', () => {
+    const ec = stats().etaCrit;
+    eta = round(clamp(Number(c.dataset.k) * ec, 0.005, 0.4), 3);
+    restart(START);
+    setTimeout(run, 150);
+  }));
+  on(() => {
+    if (S.dataV !== dv || Math.abs(S.w - mine.w) > 1e-9 || Math.abs(S.b - mine.b) > 1e-9) {
+      dv = S.dataV;
+      running = false;
+      cancelAnimationFrame(raf);
+      path = [{ w: S.w, b: S.b }];
+      mine = { w: S.w, b: S.b };
+      status = 'ready';
+      map.setPath(path);
+    }
+    map.redraw();
+    const Ls = losses(), n = Ls.length;
+    if (!lc.setDomain([0, Math.max(10, n - 1)], [0, niceCeil(Math.max(...Ls.filter(Number.isFinite), 0.1) * 1.08)])) lc.redraw();
+    const st = stats(), ec = st.etaCrit, f = (ec - 0.005) / (0.4 - 0.005);
+    etaIn.value = eta;
+    etaOut.textContent = eta.toFixed(3);
+    crit.hidden = !(f >= 0 && f <= 1);
+    crit.style.left = `calc(10px + (100% - 20px) * ${clamp(f, 0, 1)})`;
+    critL.textContent = `limit ${ec.toFixed(2)}`;
+    $$('.chips .chip').forEach(c => {
+      const names = { '0.07': 'Tiny steps', '0.5': 'Smooth', '0.93': 'Zigzag', '1.05': 'Too big' };
+      c.textContent = `${names[c.dataset.k]} · η = ${round(clamp(Number(c.dataset.k) * ec, 0.005, 0.4), 3).toFixed(3)}`;
+    });
+    const steps = n - 1;
+    const P = {
+      ready: ['pill', 'Ready'],
+      running: ['pill run', `Running · step ${steps}`],
+      paused: ['pill', `Paused at step ${steps}`],
+      converged: ['pill good', `Converged in ${steps} steps`],
+      diverged: ['pill bad', `Diverged after ${steps} steps`]
+    }[status];
+    pill.className = P[0];
+    pill.textContent = P[1];
+    bRun.textContent = running ? 'Pause' : 'Run';
+    bRun.disabled = status === 'diverged' || status === 'converged';
+    bStep.disabled = running || status === 'diverged' || status === 'converged';
+    const [gw, gb] = gradAt(S.w, S.b);
+    upd.innerHTML = `<span class="upd-k">Next step</span>
+      <span class="m"><var>w</var> <span class="arr">←</span> ${fmt(S.w)} − ${eta.toFixed(3)} × ${paren(gw)} = <b>${fmt(S.w - eta * gw)}</b></span>
+      <span class="m"><var>b</var> <span class="arr">←</span> ${fmt(S.b)} − ${eta.toFixed(3)} × ${paren(gb)} = <b>${fmt(S.b - eta * gb)}</b></span>`;
+    if (status === 'diverged') note.innerHTML = `<b>Diverged.</b> Each step overshot the valley and landed higher than the one before. Move <var>η</var> left of the red mark, then press Reset.`;
+    else if (status === 'converged') note.innerHTML = `<b>Converged.</b> The gradient is almost zero, so the steps stopped moving. You found the best fit, <span class="m"><var>w</var> = ${fmt(S.w)}</span> and <span class="m"><var>b</var> = ${fmt(S.b)}</span>, with loss ${fmt(lossAt(S.w, S.b), 3)}.`;
+    else if (eta > ec) note.innerHTML = `This <var>η</var> is past the limit of ${ec.toFixed(2)}. Press Run to watch the steps blow up.`;
+    else note.innerHTML = `Press Run, or Step to go one update at a time. Each update is the line above with real numbers.`;
+  });
+})();
+
+/* ================= part 8: many inputs ================= */
+(function part8() {
+  const M = { x: [1.0, -0.5, 2.0], w: [0.5, -1.0, 0.25], b: 0.2, y: 1.5 };
+  const sub = ['₁', '₂', '₃'];
+  const host = $('#s8-diagram');
+  const gs = svg('svg', { class: 'graph', role: 'img', 'aria-label': 'Three inputs, each multiplied by its weight, summed with the bias into one prediction' }, host);
+  const calc = () => {
+    const yh = M.w[0] * M.x[0] + M.w[1] * M.x[1] + M.w[2] * M.x[2] + M.b, e = yh - M.y;
+    return { yh, e, L: e * e, gw: M.x.map(x => 2 * e * x), gb: 2 * e };
+  };
+  const ins = [0, 1, 2].map(j => {
+    const xi = $(`#s8-x${j}`), wi = $(`#s8-w${j}`);
+    xi.addEventListener('input', () => { M.x[j] = Number(xi.value); render(); });
+    wi.addEventListener('input', () => { M.w[j] = Number(wi.value); render(); });
+    return { xi, wi, xo: $(`#s8-x${j}-out`), wo: $(`#s8-w${j}-out`) };
+  });
+  const yIn = $('#s8-y'), bIn = $('#s8-bb');
+  yIn.addEventListener('input', () => { M.y = Number(yIn.value); render(); });
+  bIn.addEventListener('input', () => { M.b = Number(bIn.value); render(); });
+  const bars = $('#s8-bars');
+  bars.innerHTML = ['w<sub>1</sub>', 'w<sub>2</sub>', 'w<sub>3</sub>', 'b'].map(n => `<div class="gbar"><span class="gbar-k m">∂<var>L</var>/∂<var>${n.replace(/<sub>(\d)<\/sub>/, '</var><sub>$1</sub><var>')}</var></span><span class="gbar-track"><span class="gbar-fill"></span></span><span class="gbar-v"></span></div>`).join('');
+  const fills = $$('.gbar-fill', bars), vals = $$('.gbar-v', bars);
+  function diagram(c) {
+    const W = Math.floor(host.clientWidth);
+    if (!W) return;
+    const H = 236, xIn = 54, xS = Math.max(W * 0.55, 190), xO = W - 52, ys = [44, 118, 192], yS = 118;
+    setA(gs, { width: W, height: H, viewBox: `0 0 ${W} ${H}` });
+    gs.textContent = '';
+    const gE = svg('g', {}, gs), gN = svg('g', {}, gs);
+    const pill = (X, Y, html, cls = '') => {
+      const t = svg('text', { x: X, y: Y + 5, 'text-anchor': 'middle', class: 'node-text' }, gN);
+      t.innerHTML = html;
+      const bw = Math.max(64, t.getBBox().width + 20);
+      gN.insertBefore(svg('rect', { x: X - bw / 2, y: Y - 16, width: bw, height: 32, rx: 16, class: 'pill-bg ' + cls }), t);
+      return bw / 2;
+    };
+    ys.forEach((Y, j) => {
+      const hw = pill(xIn, Y, `<tspan class="v">x</tspan>${sub[j]} = ${fmt(M.x[j])}`);
+      const x1 = xIn + hw, ang = Math.atan2(yS - Y, xS - x1), x2 = xS - Math.cos(ang) * 28, y2 = yS - Math.sin(ang) * 28;
+      svg('line', { x1, y1: Y, x2, y2, class: 'edge-w', 'stroke-width': (1 + 3.4 * Math.abs(M.w[j])).toFixed(2) }, gE);
+      const lx = lerp(x1, x2, 0.5), ly = lerp(Y, y2, 0.5), deg = Math.atan2(y2 - Y, x2 - x1) * 180 / Math.PI;
+      const t = svg('text', { x: 0, y: -7 - 1.7 * Math.abs(M.w[j]), 'text-anchor': 'middle', class: 'fwd', transform: `translate(${lx.toFixed(1)},${ly.toFixed(1)}) rotate(${deg.toFixed(1)})` }, gN);
+      t.innerHTML = `<tspan class="v">w</tspan>${sub[j]} = ${fmt(M.w[j])}`;
+    });
+    svg('circle', { cx: xS, cy: yS, r: 27, class: 'op' }, gN);
+    svg('text', { x: xS, y: yS + 6, 'text-anchor': 'middle', class: 'op-sym' }, gN).textContent = 'Σ + b';
+    svg('line', { x1: xS + 27, y1: yS, x2: xO - 48, y2: yS, class: 'edge-w', 'stroke-width': 1.5 }, gE);
+    pill(xO, yS, `<tspan class="v">ŷ</tspan> = ${fmt(c.yh)}`);
+    const t1 = svg('text', { x: xO, y: yS + 40, 'text-anchor': 'middle', class: 'fwd' }, gN);
+    t1.innerHTML = `target <tspan class="v">y</tspan> = ${fmt(M.y)}`;
+    const t2 = svg('text', { x: xO, y: yS + 58, 'text-anchor': 'middle', class: 'fwd' }, gN);
+    t2.innerHTML = `bias <tspan class="v">b</tspan> = ${fmt(M.b)}`;
+  }
+  function render() {
+    const c = calc();
+    ins.forEach((o, j) => { o.xi.value = M.x[j]; o.wi.value = M.w[j]; o.xo.textContent = fmt(M.x[j]); o.wo.textContent = fmt(M.w[j]); });
+    yIn.value = M.y; $('#s8-y-out').textContent = fmt(M.y);
+    bIn.value = M.b; $('#s8-bb-out').textContent = fmt(M.b);
+    diagram(c);
+    $('#s8-yh').textContent = fmt(c.yh);
+    $('#s8-e').textContent = fmt(c.e);
+    $('#s8-L').textContent = fmt(c.L, 3);
+    const gs4 = [...c.gw, c.gb], mx = Math.max(1, ...gs4.map(Math.abs));
+    gs4.forEach((g, j) => {
+      const f = g / mx * 50;
+      fills[j].style.left = (f < 0 ? 50 + f : 50) + '%';
+      fills[j].style.width = Math.abs(f) + '%';
+      vals[j].textContent = fmt(g);
+    });
+    const say = $('#s8-say');
+    if (Math.abs(c.e) < 0.005) say.innerHTML = 'The prediction matches the target, so every gradient is zero. This example has nothing left to teach the neuron.';
+    else {
+      let j = 0;
+      c.gw.forEach((g, i) => { if (Math.abs(g) > Math.abs(c.gw[j])) j = i; });
+      const zero = M.x.findIndex(x => Math.abs(x) < 1e-9);
+      say.innerHTML = `<var>w</var><sub>${j + 1}</sub> gets the most blame because its input <span class="m"><var>x</var><sub>${j + 1}</sub> = ${fmt(M.x[j])}</span> is the largest in size.` +
+        (zero >= 0 ? ` Input <var>x</var><sub>${zero + 1}</sub> is zero, so <var>w</var><sub>${zero + 1}</sub> gets no gradient at all.` : ' A step moves every weight against its own gradient.');
+    }
+  }
+  $('#s8-step').addEventListener('click', () => {
+    const c = calc();
+    M.w = M.w.map((w, j) => clamp(w - 0.1 * c.gw[j], -2, 2));
+    M.b = clamp(M.b - 0.1 * c.gb, -2, 2);
+    render();
+  });
+  $('#s8-new').addEventListener('click', () => {
+    const r = (a, b, s = 0.05) => Math.round(lerp(a, b, Math.random()) / s) * s;
+    M.x = [r(-2, 2), r(-2, 2), r(-2, 2)];
+    M.y = r(-2.5, 2.5);
+    render();
+  });
+  new ResizeObserver(() => diagram(calc())).observe(host);
+  render();
+})();
+
+/* ================= quizzes ================= */
+$$('.quiz').forEach(q => {
+  const fb = $('.quiz-fb', q), opts = $$('.quiz-opt', q);
+  opts.forEach(b => b.addEventListener('click', () => {
+    const ok = b.hasAttribute('data-correct');
+    opts.forEach(x => x.classList.remove('right', 'wrong'));
+    b.classList.add(ok ? 'right' : 'wrong');
+    fb.className = 'quiz-fb ' + (ok ? 'right' : 'wrong');
+    fb.innerHTML = `<b>${ok ? 'Correct.' : 'Not quite.'}</b> `;
+    fb.appendChild(document.createTextNode(b.dataset.fb));
+  }));
+});
+
+/* ================= theme changes repaint the canvases ================= */
+const bumpTheme = () => { S.themeV++; update(); };
+const mq = window.matchMedia('(prefers-color-scheme: dark)');
+if (mq.addEventListener) mq.addEventListener('change', bumpTheme);
+new MutationObserver(bumpTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+update();
+})();
+</script>
+</body>
+</html>
