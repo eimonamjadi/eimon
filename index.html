@@ -5,6 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Eimon</title>
   <meta name="description" content="Under construction.">
+  <!-- Link preview (iMessage, LinkedIn, Slack, X, etc.) -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Eimon">
+  <meta property="og:description" content="Under construction.">
+  <meta property="og:url" content="https://eimonamjadi.github.io/eimon/">
+  <meta property="og:image" content="https://eimonamjadi.github.io/eimon/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Eimon, written in Stanford cardinal on a warm yellow and orange gradient">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Eimon">
+  <meta name="twitter:description" content="Under construction.">
+  <meta name="twitter:image" content="https://eimonamjadi.github.io/eimon/og.png">
   <meta name="color-scheme" content="light dark">
   <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
@@ -30,6 +43,7 @@
       --shine: rgba(255, 255, 255, 0.55);
       --rim: rgba(255, 255, 255, 0.95);
       --glow: rgba(255, 244, 214, 0.55);
+      --ripple: rgba(233, 131, 0, 0.5);
       --name-gradient: linear-gradient(135deg, #8c1515 0%, #b1040e 60%, #c43a00 100%);
     }
 
@@ -53,6 +67,7 @@
         --shine: rgba(255, 220, 160, 0.14);
         --rim: rgba(255, 214, 140, 0.75);
         --glow: rgba(255, 150, 60, 0.22);
+        --ripple: rgba(254, 221, 92, 0.4);
         --name-gradient: linear-gradient(135deg, #fedd5c 0%, #ffab5c 50%, #ff6b5c 100%);
       }
     }
@@ -196,6 +211,23 @@
     }
     .cursor-glow.on { opacity: 1; }
 
+    /* Click ripple: a warm ring spreads through the background */
+    .ripple {
+      position: fixed;
+      z-index: 1;
+      width: 40px;
+      height: 40px;
+      margin: -20px 0 0 -20px;
+      border-radius: 50%;
+      pointer-events: none;
+      background: radial-gradient(circle, transparent 30%, var(--ripple) 50%, transparent 70%);
+      animation: ripple 1400ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    @keyframes ripple {
+      from { transform: scale(0.2); opacity: 1; }
+      to   { transform: scale(18); opacity: 0; }
+    }
+
     /* Name: letters arrive one by one, blur to sharp */
     .name .ch {
       display: inline-block;
@@ -293,7 +325,7 @@
     /* ---------- Accessibility preferences ---------- */
     @media (prefers-reduced-motion: reduce) {
       .orb, .pulse, .glass, .name .ch { animation: none; }
-      .cursor-glow, .glass::before, .glass::after { display: none; }
+      .cursor-glow, .glass::before, .glass::after, .ripple { display: none; }
       .button { transition: none; }
     }
 
@@ -346,6 +378,22 @@
     </div>
   </main>
   <script>
+    // Click ripple
+    (function () {
+      var motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+      var contrast = window.matchMedia('(prefers-contrast: more)');
+      window.addEventListener('pointerdown', function (e) {
+        if (motion.matches || contrast.matches || document.querySelectorAll('.ripple').length > 6) return;
+        var r = document.createElement('div');
+        r.className = 'ripple';
+        r.setAttribute('aria-hidden', 'true');
+        r.style.left = e.clientX + 'px';
+        r.style.top = e.clientY + 'px';
+        r.addEventListener('animationend', function () { r.remove(); });
+        document.body.appendChild(r);
+      }, { passive: true });
+    })();
+
     // Name gradient: give each letter its slice of one continuous gradient.
     (function () {
       var h1 = document.querySelector('.name');
