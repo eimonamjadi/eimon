@@ -27,6 +27,9 @@
       --orb-3: #8c1515;   /* Stanford Cardinal */
       --orb-opacity: 0.6;
       --name-solid: #8c1515;
+      --shine: rgba(255, 255, 255, 0.55);
+      --rim: rgba(255, 255, 255, 0.95);
+      --glow: rgba(255, 244, 214, 0.55);
       --name-gradient: linear-gradient(135deg, #8c1515 0%, #b1040e 60%, #c43a00 100%);
     }
 
@@ -47,6 +50,9 @@
         --orb-3: #8c1515;
         --orb-opacity: 0.5;
         --name-solid: #fedd5c;
+        --shine: rgba(255, 220, 160, 0.14);
+        --rim: rgba(255, 214, 140, 0.75);
+        --glow: rgba(255, 150, 60, 0.22);
         --name-gradient: linear-gradient(135deg, #fedd5c 0%, #ffab5c 50%, #ff6b5c 100%);
       }
     }
@@ -119,7 +125,14 @@
                max(24px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
     }
 
+    /* Tilt wrapper: JS sets --rx/--ry; kept separate so it doesn't fight the card's entrance animation */
+    .tilt {
+      transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+      transform-origin: center;
+    }
+
     .glass {
+      position: relative;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -133,6 +146,69 @@
       backdrop-filter: blur(28px) saturate(1.6);
       text-align: center;
       animation: rise 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .glass > * { position: relative; z-index: 1; }
+
+    /* Soft shine that slides across the card as it tilts */
+    .glass::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background: radial-gradient(420px circle at var(--sx, 50%) var(--sy, 0%),
+                  var(--shine), transparent 60%);
+      opacity: var(--shine-on, 0);
+      transition: opacity 400ms ease;
+    }
+
+    /* Rim light: the card's edge brightens where the cursor is near */
+    .glass::after {
+      content: "";
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      padding: 1.5px;
+      pointer-events: none;
+      background: radial-gradient(260px circle at var(--gx, -999px) var(--gy, -999px),
+                  var(--rim), transparent 70%);
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    }
+
+    /* Warm light that follows the cursor across the page */
+    .cursor-glow {
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 1;
+      width: 640px;
+      height: 640px;
+      margin: -320px 0 0 -320px;
+      border-radius: 50%;
+      pointer-events: none;
+      background: radial-gradient(circle, var(--glow) 0%, transparent 62%);
+      opacity: 0;
+      transition: opacity 500ms ease;
+      will-change: transform;
+    }
+    .cursor-glow.on { opacity: 1; }
+
+    /* Name: letters arrive one by one, blur to sharp */
+    .name .ch {
+      display: inline-block;
+      background: var(--name-gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: letter 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: calc(250ms + var(--i) * 80ms);
+    }
+    @keyframes letter {
+      from { opacity: 0; filter: blur(14px); transform: translateY(0.18em) scale(0.96); }
+      to   { opacity: 1; filter: blur(0); transform: none; }
     }
 
     @keyframes rise {
@@ -156,11 +232,7 @@
       line-height: 1;
       font-weight: 700;
       letter-spacing: -0.045em;
-      color: var(--name-solid);
-      background: var(--name-gradient);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: var(--name-solid);     /* the gradient lives on each letter (.ch) */
     }
 
     .status {
@@ -220,7 +292,8 @@
 
     /* ---------- Accessibility preferences ---------- */
     @media (prefers-reduced-motion: reduce) {
-      .orb, .pulse, .glass { animation: none; }
+      .orb, .pulse, .glass, .name .ch { animation: none; }
+      .cursor-glow, .glass::before, .glass::after { display: none; }
       .button { transition: none; }
     }
 
@@ -239,13 +312,10 @@
         background: var(--bg);
         border-color: var(--label);
       }
-      .name {
-        background: none;
-        -webkit-text-fill-color: currentColor;
-        color: var(--label);
-      }
+      .name { color: var(--label); }
       .status { color: var(--label); }
-      .aurora, .grain { display: none; }
+      .name .ch { background: none; -webkit-text-fill-color: currentColor; }
+      .aurora, .grain, .cursor-glow, .glass::before, .glass::after { display: none; }
     }
   </style>
 </head>
@@ -256,11 +326,13 @@
     <div class="layer" data-depth="1.4"><div class="orb c"></div></div>
   </div>
   <div class="grain" aria-hidden="true"></div>
+  <div class="cursor-glow" aria-hidden="true"></div>
 
   <main>
+    <div class="tilt">
     <section class="glass">
       <header class="heading">
-        <h1 class="name">Eimon</h1>
+        <h1 class="name" aria-label="Eimon"><span class="ch" style="--i:0" aria-hidden="true">E</span><span class="ch" style="--i:1" aria-hidden="true">i</span><span class="ch" style="--i:2" aria-hidden="true">m</span><span class="ch" style="--i:3" aria-hidden="true">o</span><span class="ch" style="--i:4" aria-hidden="true">n</span></h1>
         <p class="status"><span class="pulse" aria-hidden="true"></span>Under construction</p>
       </header>
       <!-- Update this URL if your LinkedIn handle is different -->
@@ -271,7 +343,84 @@
         LinkedIn
       </a>
     </section>
+    </div>
   </main>
+  <script>
+    // Name gradient: give each letter its slice of one continuous gradient.
+    (function () {
+      var h1 = document.querySelector('.name');
+      var chars = h1.querySelectorAll('.ch');
+      function fit() {
+        var w = h1.scrollWidth;
+        chars.forEach(function (c) {
+          c.style.backgroundSize = w + 'px 100%';
+          c.style.backgroundPosition = (h1.offsetLeft - c.offsetLeft) + 'px 0';
+        });
+      }
+      fit();
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+      window.addEventListener('resize', fit);
+    })();
+
+    // Card tilt + shine, rim light and cursor glow, all eased in one loop.
+    (function () {
+      var motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+      var fine = window.matchMedia('(hover: hover) and (pointer: fine)');
+      var tilt = document.querySelector('.tilt');
+      var card = document.querySelector('.glass');
+      var glow = document.querySelector('.cursor-glow');
+      var MAX = 7;              // degrees of tilt at the card's edge
+      var EASE = 0.12;
+      var pt = { x: innerWidth / 2, y: innerHeight / 2 }, cur = { x: pt.x, y: pt.y };
+      var active = false, raf = null;
+
+      function onMove(e) {
+        pt.x = e.clientX; pt.y = e.clientY;
+        if (!active) { active = true; cur.x = pt.x; cur.y = pt.y; glow.classList.add('on'); card.style.setProperty('--shine-on', 1); }
+        if (!raf) raf = requestAnimationFrame(tick);
+      }
+      function onLeave() {
+        active = false;
+        glow.classList.remove('on');
+        card.style.setProperty('--shine-on', 0);
+        pt.x = innerWidth / 2; pt.y = innerHeight / 2;
+        if (!raf) raf = requestAnimationFrame(tick);
+      }
+      function tick() {
+        cur.x += (pt.x - cur.x) * EASE;
+        cur.y += (pt.y - cur.y) * EASE;
+        var r = card.getBoundingClientRect();
+        var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        // Tilt eases off with distance so the card only leans when you're near it
+        var nx = (cur.x - cx) / (r.width / 2), ny = (cur.y - cy) / (r.height / 2);
+        var reach = Math.max(0, 1 - Math.max(0, Math.hypot(nx, ny) - 1) / 1.5);
+        var k = active ? reach : 0;
+        nx = Math.max(-1, Math.min(1, nx)); ny = Math.max(-1, Math.min(1, ny));
+        tilt.style.setProperty('--ry', (nx * MAX * k).toFixed(2) + 'deg');
+        tilt.style.setProperty('--rx', (-ny * MAX * k).toFixed(2) + 'deg');
+        card.style.setProperty('--sx', ((nx + 1) * 50).toFixed(1) + '%');
+        card.style.setProperty('--sy', ((ny + 1) * 50).toFixed(1) + '%');
+        card.style.setProperty('--gx', (cur.x - r.left).toFixed(1) + 'px');
+        card.style.setProperty('--gy', (cur.y - r.top).toFixed(1) + 'px');
+        glow.style.transform = 'translate3d(' + cur.x.toFixed(1) + 'px,' + cur.y.toFixed(1) + 'px,0)';
+        var settled = Math.abs(pt.x - cur.x) < 0.3 && Math.abs(pt.y - cur.y) < 0.3;
+        raf = settled ? null : requestAnimationFrame(tick);
+      }
+      function enable() {
+        window.addEventListener('pointermove', onMove, { passive: true });
+        document.documentElement.addEventListener('pointerleave', onLeave);
+      }
+      function disable() {
+        window.removeEventListener('pointermove', onMove);
+        document.documentElement.removeEventListener('pointerleave', onLeave);
+        onLeave();
+      }
+      function sync() { (!motion.matches && fine.matches) ? enable() : disable(); }
+      sync();
+      motion.addEventListener && motion.addEventListener('change', sync);
+      fine.addEventListener && fine.addEventListener('change', sync);
+    })();
+  </script>
   <script>
     // Pointer parallax: the aurora layers ease toward the cursor at different depths.
     (function () {
